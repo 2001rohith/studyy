@@ -1,0 +1,106 @@
+import { useState, useEffect } from 'react';
+import TeacherSidebar from '../components/TeacherSidebar'
+import { useLocation, useNavigate } from 'react-router-dom';
+
+
+const TeacherEditModule = () => {
+    const navigate = useNavigate()
+    const location = useLocation()
+    const mod = location.state?.module
+    const course = location.state?.course
+    const moduleId = location.state?.module._id
+    const [title, setTitle] = useState(mod.title);
+    const [description, setDescription] = useState(mod.description);
+
+    const [pdfFile, setPdfFile] = useState(null);
+    const [videoFile, setVideFile] = useState(null)
+    const [loading, setLoading] = useState(false);
+
+    const handleFileChange = (e) => {
+        setPdfFile(e.target.files[0]);
+    };
+    const handleVideoFileChange = (e)=>{
+        setVideFile(e.target.files[0])
+    }
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!pdfFile) {
+            alert("Please select a PDF file to upload");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('pdf', pdfFile);
+        formData.append("video",videoFile)
+
+        try {
+            setLoading(true);
+            const response = await fetch(`http://localhost:8000/course/teacher-edit-module/${moduleId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: formData, 
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                alert("Module added successfully");
+                navigate("/teacher-edit-course",{state:{course}})
+            } else {
+                alert(data.message || "Failed to add module");
+            }
+        } catch (error) {
+            console.log("Error uploading module", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <>
+            <div className='row'>
+                <div className='col text-light side-bar'>
+                    <TeacherSidebar />
+                </div>
+                <div className='col text-light '>
+                    <div className='row headers'>
+                        <h4>Courses</h4>
+                    </div>
+                    <div className='row content forms'>
+                        <div className='other-forms'>
+                            <h5 className='mb-5'>Edit Module</h5>
+                            <form onSubmit={handleSubmit}>
+                                <input className='form-control' type="text" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                                <textarea className='form-control' placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} required />
+                                <label>Upload PDF:</label>
+                                <input
+                                    className='form-control'
+                                    type="file"
+                                    accept="application/pdf"
+                                    onChange={handleFileChange}
+                                    required
+                                />
+                                <input
+                                    className='form-control'
+                                    type="file"
+                                    accept="video/mp4"
+                                    onChange={handleVideoFileChange}
+                                    required
+                                />
+                                <button className='btn btn-secondary button mb-3' type="submit">Save</button>
+                            </form>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+};
+
+export default TeacherEditModule;
+
