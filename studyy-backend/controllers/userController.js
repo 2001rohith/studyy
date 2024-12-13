@@ -104,6 +104,11 @@ exports.Login = async (req, res) => {
             return res.status(400).json({ message: "Please verify your email before logging in" });
         }
 
+        if(user.otp !== null){
+            user.otp = null
+            await user.save()
+        }
+
         const isPasswordValid = await user.comparePassword(password)
         if (!isPasswordValid) {
             console.log("wrong password")
@@ -307,3 +312,4 @@ exports.editProfile = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 }
+

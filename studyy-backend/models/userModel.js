@@ -48,7 +48,8 @@ const UserSchema = new mongoose.Schema({
         default: null
     },
     deviceToken: {
-        type: String
+        type: String,
+        default: null
     },
     enrolledCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
     passwordResetToken: String,

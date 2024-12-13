@@ -13,9 +13,6 @@ dotenv.config();
 
 const PORT = 8000;
 
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  })
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URL)

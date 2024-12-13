@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Peer from 'peerjs';
 import { useLocation, useNavigate } from 'react-router-dom';
-import TeacherSidebar from '../components/TeacherSidebar';
+import StudentSidebar from '../components/StudentSidebar'
 import '../css/TeacherLiveClass.css';
 import io from 'socket.io-client';
 
 const socket = io('http://localhost:8000');
 
-function TeacherLiveClass() {
+function StudentLiveClass() {
+    const user = JSON.parse(localStorage.getItem("user"))
     const [peerId, setPeerId] = useState('');
     const [isMuted, setIsMuted] = useState(false);
     const [isCameraOff, setIsCameraOff] = useState(false);
@@ -16,7 +17,9 @@ function TeacherLiveClass() {
     const peerInstance = useRef(null);
     const [stream, setStream] = useState(null);
     // const [socket, setSocket] = useState(null);
-    const [studentStreams, setStudentStreams] = useState([]);
+    // const [peerConnection, setPeerConnection] = useState(null);
+    // const [hasTeacherStream, setHasTeacherStream] = useState(false)
+    const [hasJoined, setHasJoined] = useState(true)
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [showModal, setShowModal] = useState(false)
@@ -25,14 +28,25 @@ function TeacherLiveClass() {
     const location = useLocation();
     const classId = location.state?.classId;
     const courseId = location.state?.classId;
-    const userName = "Teacher"
+    const classTitle = location.state?.title;
+    const userName = user.name
+
+    const classPeerId = location.state?.peerId
+    console.log("class peerid:", classPeerId)
+    const [remotePeerIdValue, setRemotePeerIdValue] = useState("");
 
     useEffect(() => {
-        socket.emit('join-class', classId)
+        socket.emit('join-class', classId);
 
         socket.on('receive-message', (messageData) => {
             setMessages((prevMessages) => [...prevMessages, messageData]);
             setHasUnread(true)
+            console.log("has unread:", hasJoined)
+        });
+
+        socket.on('teacher-ended-class', (classId) => {
+            handleEndClass()
+            console.log("class ended")
         });
 
         return () => {
@@ -48,25 +62,18 @@ function TeacherLiveClass() {
         setNewMessage('');
     };
 
-    const sendPeerIdToBackend = async (Id) => {
-        try {
-            const response = await fetch(`http://localhost:8000/course/add-peerid/${classId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ peerId: Id }),
+    const joinClass = () => {
+        setRemotePeerIdValue(classPeerId);
+        call(remotePeerIdValue)
+            .then(() => {
+                setHasJoined(false);
+            })
+            .catch((err) => {
+                console.error("Error joining the class:", err);
+                setHasJoined(false);
             });
-
-            if (response.ok) {
-                console.log('Peer ID saved successfully');
-            } else {
-                console.error('Failed to save Peer ID');
-            }
-        } catch (error) {
-            console.error('Error saving Peer ID:', error);
-        }
     };
+
 
     const startSelfVideo = async () => {
         try {
@@ -108,46 +115,28 @@ function TeacherLiveClass() {
 
         peer.on('open', (id) => {
             setPeerId(id);
-            console.log("current peerId:", id)
-            sendPeerIdToBackend(id);
+            console.log("student peerid:", id)
+
         });
 
         peer.on('call', (call) => {
             startSelfVideo().then((mediaStream) => {
                 call.answer(mediaStream);
                 call.on('stream', (remoteStream) => {
-                    const studentPeerId = call.peer;
+                    remoteVideoRef.current.srcObject = remoteStream;
 
-                    setStudentStreams((prevStreams) => {
-                        if (!prevStreams.some((streamObj) => streamObj.peerId === studentPeerId)) {
-                            return [...prevStreams, { peerId: studentPeerId, stream: remoteStream }];
-                        }
-                        return prevStreams;
-                    });
-                });
-                peer.on('call', (call) => {
-                    startSelfVideo().then((mediaStream) => {
-                        call.answer(mediaStream);
-                        call.on('stream', (remoteStream) => {
-                            const studentPeerId = call.peer;
+                    const videoElement = remoteVideoRef.current;
 
-                            setStudentStreams((prevStreams) => {
-                                if (!prevStreams.some((streamObj) => streamObj.peerId === studentPeerId)) {
-                                    return [...prevStreams, { peerId: studentPeerId, stream: remoteStream }];
-                                }
-                                return prevStreams;
+                    videoElement.onloadedmetadata = () => {
+                        try {
+                            videoElement.play().catch((err) => {
+                                console.error("Error trying to play remote video: ", err);
                             });
-                        });
-                        call.on('close', () => {
-                            setStudentStreams((prevStreams) =>
-                                prevStreams.filter((streamObj) => streamObj.peerId !== call.peer)
-                            );
-                            console.log(`Student with peerId ${call.peer} disconnected`);
-                        });
-
-                    });
+                        } catch (err) {
+                            console.error("Error playing video: ", err);
+                        }
+                    };
                 });
-
             });
         });
 
@@ -155,36 +144,58 @@ function TeacherLiveClass() {
 
         startSelfVideo();
 
-        // Listen for the `remove-student` event from the server
-        peer.on('remove-student', (peerId) => {
-            setStudentStreams((prevStreams) =>
-                prevStreams.filter((streamObj) => streamObj.peerId !== peerId)
-            );
-            console.log(`Student with peerId ${peerId} removed from UI`);
-        });
+        // return () => {
+        //     socket.emit('student-disconnected', peerId); // Emit to server that the student disconnected
+        // };
 
-        // Cleanup the socket listener when the component unmounts
-        return () => {
-            peer.off('remove-student');
-        };
     }, []);
 
-    const callStudents = (studentPeerIds) => {
-        startSelfVideo().then((mediaStream) => {
-            studentPeerIds.forEach((studentPeerId) => {
-                const call = peerInstance.current.call(studentPeerId, mediaStream);
-                call.on('stream', (remoteStream) => {
-                    setStudentStreams((prevStreams) => [
-                        ...prevStreams,
-                        { peerId: studentPeerId, stream: remoteStream },
-                    ]);
+    const call = (remotePeerId) => {
+        return new Promise((resolve, reject) => {
+            startSelfVideo()
+                .then((mediaStream) => {
+                    const callInstance = peerInstance.current.call(remotePeerId, mediaStream);
+
+                    callInstance.on('stream', (remoteStream) => {
+                        const videoElement = remoteVideoRef.current;
+
+                        if (videoElement) {
+                            videoElement.srcObject = remoteStream;
+
+                            videoElement.onloadedmetadata = () => {
+                                try {
+                                    videoElement.play().catch((err) => {
+                                        console.error("Error trying to play remote video: ", err);
+                                    });
+                                    resolve();
+                                } catch (err) {
+                                    console.error("Error playing video: ", err);
+                                    reject(err);
+                                }
+                            };
+                        } else {
+                            reject(new Error("Remote video element not found."));
+                        }
+                    });
+
+                    callInstance.on('error', (error) => {
+                        console.error("Error during call:", error);
+                        reject(error);
+                    });
+                })
+                .catch((err) => {
+                    console.error("Error starting self video: ", err);
+                    reject(err);
                 });
-            });
-        }).catch(err => console.error("Error starting self video: ", err));
+        });
     };
+
+
+
 
     const handleEndClass = async () => {
         try {
+            // socket.emit('student-disconnected', peerId)
             if (stream) {
                 stream.getTracks().forEach((track) => {
                     track.stop();
@@ -193,62 +204,46 @@ function TeacherLiveClass() {
                 setStream(null);
             }
 
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const videoInputDevices = devices.filter((device) => device.kind === "videoinput");
-
-                if (videoInputDevices.length) {
-                    const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    tempStream.getTracks().forEach((track) => track.stop());
-                }
-            }
-
-            // Stop all remote video tracks
-            if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {
-                const remoteStream = remoteVideoRef.current.srcObject;
-                remoteStream.getTracks().forEach((track) => {
-                    track.stop(); // Stop the remote stream tracks
-                });
-            }
-
-            // Close the PeerJS connection
             if (peerInstance.current) {
+                if (peerInstance.current._connections) {
+                    Object.values(peerInstance.current._connections).forEach((connections) => {
+                        connections.forEach((conn) => {
+                            if (conn.close) {
+                                conn.close();
+                                console.log(`Closed connection: ${conn.peer}`);
+                            }
+                        });
+                    });
+                }
+
                 peerInstance.current.disconnect();
-                peerInstance.current = null; // Clear the PeerJS reference
+                peerInstance.current = null;
             }
 
-            // Reset the video elements to ensure they do not show frozen frames
             if (currentUserVideoRef.current) {
-                currentUserVideoRef.current.srcObject = null; // Clear the teacher's video source
+                currentUserVideoRef.current.srcObject = null;
             }
             if (remoteVideoRef.current) {
-                remoteVideoRef.current.srcObject = null; // Clear the student's video source
+                remoteVideoRef.current.srcObject = null;
             }
 
-            socket.emit('end-live-class', { classId });
-
-            // Navigate to the teacher's classes view
-            navigate("/teacher-view-class-course", { replace: true });
+            navigate("/student-view-classes", { replace: true });
         } catch (error) {
             console.error("Error during class cleanup:", error);
         }
     };
 
-
-
-    // Toggle mute
     const toggleMute = () => {
         if (stream) {
-            const audioTrack = stream.getAudioTracks()[0]; // Get the first audio track (mic)
+            const audioTrack = stream.getAudioTracks()[0];
 
             if (audioTrack) {
-                audioTrack.enabled = !audioTrack.enabled; // Toggle the 'enabled' property of the audio track
-                setIsMuted(!audioTrack.enabled); // Update the mute state accordingly
+                audioTrack.enabled = !audioTrack.enabled;
+                setIsMuted(!audioTrack.enabled);
             }
         }
     };
 
-    // Toggle camera
     const toggleCamera = () => {
         if (stream) {
             stream.getVideoTracks().forEach(track => {
@@ -260,35 +255,38 @@ function TeacherLiveClass() {
 
     const toggleMessage = () => {
         setHasUnread(false)
-        setShowModal(!showModal);
+        setShowModal(!showModal)
     };
 
     return (
         <div className="live-class-page">
-            <TeacherSidebar />
+            <StudentSidebar />
             <div className="live-class-content">
                 <header className="live-class-header">
-                    <h3 className='mb-5 mt-2'>Live Class</h3>
+                    {!hasJoined ? (
+                        <>
+                            <h3 >{classTitle}</h3>
+                        </>
+                    ) : (
+                        <>
+                            <h4>Live Class</h4>
+                            <button className="btn table-button " onClick={() => joinClass()}>Join</button>
+                        </>
+                    )}
+
                 </header>
 
-                <div className="video-section row">
-                    <div className='col teacher-video-section'>
-                        <video ref={currentUserVideoRef} className="teacher-video me-2" />
+                <div className="video-section row pt-4">
+
+                    <div className="col teacher-video-section">
+                        <small>Teacher</small>
+                        <video ref={remoteVideoRef} className="teacher-video" />
                     </div>
-                    <div className='col student-video-section'>
-                        {studentStreams.map(({ peerId, stream }) => (
-                            <div key={peerId} className="student-video-container">
-                                <video
-                                    ref={(el) => {
-                                        if (el) {
-                                            el.srcObject = stream;
-                                            el.play().catch(err => console.error("Error playing remote video:", err));
-                                        }
-                                    }}
-                                    className="student-video"
-                                />
-                            </div>
-                        ))}
+
+                    <div className='col student-self-video-section'>
+                        <small>You</small>
+
+                        <video ref={currentUserVideoRef} className="student-self-video me-2" />
                     </div>
                 </div>
 
@@ -313,8 +311,9 @@ function TeacherLiveClass() {
                     </a>
                     </div> */}
                 </div>
+
                 {showModal && (
-                    <div className="modal fade show d-block live-chat-modal" tabIndex="-1" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+                    <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
                         <div className="modal-dialog modal-dialog-scrollable">
                             <div className="modal-content">
                                 <div className="modal-header">
@@ -359,4 +358,4 @@ function TeacherLiveClass() {
     );
 }
 
-export default TeacherLiveClass;
+export default StudentLiveClass;

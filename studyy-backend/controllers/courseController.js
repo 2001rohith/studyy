@@ -193,7 +193,7 @@ exports.EditModule = async (req, res) => {
 
 exports.AdmingetCourses = async (req, res) => {
     try {
-        const courses = await Course.find().sort({ createdAt: -1 })
+        const courses = await Course.find().sort({ createdAt: -1 }).populate('teacher', 'name')
         const courseToSend = await Promise.all(
             courses.map(async (course) => {
                 const teacher = await User.findById(course.teacher)
@@ -209,7 +209,7 @@ exports.AdmingetCourses = async (req, res) => {
 
         res.status(200).json({ status: 'ok', courses: courseToSend, message: "Courses for admin" })
     } catch (error) {
-        console.error("Get courses error:", error.message);
+        console.error("Admin get courses error:", error.message);
         res.status(500).json({ message: "Server error" });
     }
 }
@@ -282,6 +282,10 @@ exports.CreateAssignment = async (req, res) => {
         });
 
         await newAssignment.save();
+        if (!course.assignments.includes(newAssignment._id)) {
+            course.assignments.push(newAssignment._id)
+            await course.save()
+        }
 
         res.status(201).json({
             message: "Assignment created successfully.",
@@ -859,12 +863,12 @@ exports.addClassPeerId = async (req, res) => {
 
 exports.EditClass = async (req, res) => {
     const classId = req.params.id;
-    const { title, time, date, duration } = req.body;
+    const { title, time, date, duration,status } = req.body;
 
     try {
         const updatedClass = await Class.findByIdAndUpdate(
             classId,
-            { title, time, date, duration },
+            { title, time, date, duration,status },
             { new: true, runValidators: true }
         );
 
@@ -967,22 +971,50 @@ exports.sendEmailNotification = async (req, res) => {
         const studentEmails = course.studentsEnrolled.map(student => student.email);
 
         const emailPromises = studentEmails.map(email =>
-            sendEmail(email, `Notification from ${course.title}`, message)
+            sendEmail(email, ` Notification from ${course.title}`, message)
         );
 
         const results = await Promise.allSettled(emailPromises);
 
-        
-
         const failedEmails = results.filter(result => result.status === 'rejected');
 
-        if (failedEmails.length > 0) console.log("error in sending email")
-
+        if (failedEmails.length > 0) {
+            console.error('Failed to send emails to some recipients:', failedEmails);
+            return res.status(500).json({
+                message: 'Some emails failed to send.',
+                failedCount: failedEmails.length,
+            });
+        }
         console.log("email notification sent succesfully")
         res.status(200).json({ message: 'Email notifications sent successfully!' });
     } catch (error) {
         console.error('Error sending email notifications:', error);
         res.status(500).json({ error: 'Failed to send email notifications.' });
+    }
+}
+
+exports.updateClassStatusToEnded = async (req, res) => {
+    const classId = req.params.id
+    try {
+        const selectedClass = await Class.findById(classId)
+        selectedClass.status = "Ended"
+        await selectedClass.save()
+        res.status(200).json({message:"Class Status updated"})
+    } catch (error) {
+        console.error('Error setting class status as ended:', error);
+        res.status(500).json({ error: 'Error setting class status as ended.' });
+    }
+}
+
+exports.dashboardData = async (req, res) => {
+    try {
+        const userCount = await User.countDocuments()
+        const courseCount = await Course.countDocuments()
+
+        res.status(200).json({ userCount, courseCount })
+    } catch (error) {
+        console.error('Error getting dashboard data:', error);
+        res.status(500).json({ error: 'Error getting dashboard data.' });
     }
 }
 

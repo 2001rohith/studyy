@@ -21,7 +21,7 @@ function TeacherLiveClass() {
     const [newMessage, setNewMessage] = useState('');
     const [showModal, setShowModal] = useState(false)
     const [hasUnread, setHasUnread] = useState(false);
-    const navigate = useNavigate();
+    const navigate = useNavigate(); 3
     const location = useLocation();
     const classId = location.state?.classId;
     const courseId = location.state?.classId;
@@ -75,6 +75,10 @@ function TeacherLiveClass() {
                 audio: true
             });
 
+            if (!mediaStream) {
+                throw new Error('Failed to get media stream');
+            }
+
             currentUserVideoRef.current.srcObject = mediaStream;
 
             await new Promise((resolve, reject) => {
@@ -125,29 +129,13 @@ function TeacherLiveClass() {
                         return prevStreams;
                     });
                 });
-                peer.on('call', (call) => {
-                    startSelfVideo().then((mediaStream) => {
-                        call.answer(mediaStream);
-                        call.on('stream', (remoteStream) => {
-                            const studentPeerId = call.peer;
 
-                            setStudentStreams((prevStreams) => {
-                                if (!prevStreams.some((streamObj) => streamObj.peerId === studentPeerId)) {
-                                    return [...prevStreams, { peerId: studentPeerId, stream: remoteStream }];
-                                }
-                                return prevStreams;
-                            });
-                        });
-                        call.on('close', () => {
-                            setStudentStreams((prevStreams) =>
-                                prevStreams.filter((streamObj) => streamObj.peerId !== call.peer)
-                            );
-                            console.log(`Student with peerId ${call.peer} disconnected`);
-                        });
-
-                    });
+                call.on('close', () => {
+                    setStudentStreams((prevStreams) =>
+                        prevStreams.filter((streamObj) => streamObj.peerId !== call.peer)
+                    );
+                    console.log(`Student with peerId ${call.peer} disconnected`);
                 });
-
             });
         });
 
@@ -155,7 +143,6 @@ function TeacherLiveClass() {
 
         startSelfVideo();
 
-        // Listen for the `remove-student` event from the server
         peer.on('remove-student', (peerId) => {
             setStudentStreams((prevStreams) =>
                 prevStreams.filter((streamObj) => streamObj.peerId !== peerId)
@@ -163,7 +150,6 @@ function TeacherLiveClass() {
             console.log(`Student with peerId ${peerId} removed from UI`);
         });
 
-        // Cleanup the socket listener when the component unmounts
         return () => {
             peer.off('remove-student');
         };
@@ -171,17 +157,43 @@ function TeacherLiveClass() {
 
     const callStudents = (studentPeerIds) => {
         startSelfVideo().then((mediaStream) => {
-            studentPeerIds.forEach((studentPeerId) => {
-                const call = peerInstance.current.call(studentPeerId, mediaStream);
-                call.on('stream', (remoteStream) => {
-                    setStudentStreams((prevStreams) => [
-                        ...prevStreams,
-                        { peerId: studentPeerId, stream: remoteStream },
-                    ]);
+            if (mediaStream) {
+                studentPeerIds.forEach((studentPeerId) => {
+                    const call = peerInstance.current.call(studentPeerId, mediaStream);
+                    call.on('stream', (remoteStream) => {
+                        setStudentStreams((prevStreams) => {
+                            if (!prevStreams.some(stream => stream.peerId === studentPeerId)) {
+                                return [...prevStreams, { peerId: studentPeerId, stream: remoteStream }];
+                            }
+                            return prevStreams;
+                        });
+                    });
+
+                    call.on('error', (err) => {
+                        console.error(`Error connecting to student ${studentPeerId}:`, err);
+                    });
                 });
-            });
+            }
         }).catch(err => console.error("Error starting self video: ", err));
     };
+
+    const updateStatus = async()=>{
+        try {
+            const response = await fetch(`http://localhost:8000/course/update-class-status/${classId}`,{
+                method:"PUT",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            if (response.ok) {
+                console.log('Class status updated');
+            } else {
+                console.error('Failed to save Peer ID');
+            }
+        } catch (error) {
+            console.error('Failed to update class status',error);
+        }
+    }
 
     const handleEndClass = async () => {
         try {
@@ -203,31 +215,28 @@ function TeacherLiveClass() {
                 }
             }
 
-            // Stop all remote video tracks
             if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {
                 const remoteStream = remoteVideoRef.current.srcObject;
                 remoteStream.getTracks().forEach((track) => {
-                    track.stop(); // Stop the remote stream tracks
+                    track.stop(); 
                 });
             }
 
-            // Close the PeerJS connection
             if (peerInstance.current) {
                 peerInstance.current.disconnect();
-                peerInstance.current = null; // Clear the PeerJS reference
+                peerInstance.current = null;
             }
 
-            // Reset the video elements to ensure they do not show frozen frames
             if (currentUserVideoRef.current) {
-                currentUserVideoRef.current.srcObject = null; // Clear the teacher's video source
+                currentUserVideoRef.current.srcObject = null; 
             }
             if (remoteVideoRef.current) {
-                remoteVideoRef.current.srcObject = null; // Clear the student's video source
+                remoteVideoRef.current.srcObject = null; 
             }
 
             socket.emit('end-live-class', { classId });
+            updateStatus()
 
-            // Navigate to the teacher's classes view
             navigate("/teacher-view-class-course", { replace: true });
         } catch (error) {
             console.error("Error during class cleanup:", error);
@@ -236,7 +245,6 @@ function TeacherLiveClass() {
 
 
 
-    // Toggle mute
     const toggleMute = () => {
         if (stream) {
             const audioTrack = stream.getAudioTracks()[0]; // Get the first audio track (mic)
@@ -248,7 +256,6 @@ function TeacherLiveClass() {
         }
     };
 
-    // Toggle camera
     const toggleCamera = () => {
         if (stream) {
             stream.getVideoTracks().forEach(track => {

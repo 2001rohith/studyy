@@ -20,9 +20,11 @@ const { createCourse, getCourses, DeleteCourse, getCourse, EditCourse,
     getAssignmentSubmissions,
     getQuizSubmissions,
     getCourseStudents,
-    sendEmailNotification} = require("../controllers/courseController")
+    sendEmailNotification,
+    updateClassStatusToEnded} = require("../controllers/courseController")
 const { homeCourses } = require("../controllers/studentController")
 
+//Teacher Routes
 router.post("/create", createCourse)
 router.get("/get-courses", authMiddleware, getCourses)
 router.delete("/teacher-delete-course/:id", DeleteCourse)
@@ -32,8 +34,6 @@ router.post("/teacher-add-module", upload.fields([{ name: "pdf", maxCount: 1 }, 
 router.get("/home-get-courses/:id", homeCourses)
 router.delete("/teacher-delete-module/:id", DeleteModule)
 router.put("/teacher-edit-module/:id", upload.fields([{ name: "pdf", maxCount: 1 }, { name: "video", maxCount: 1 }]), EditModule)
-router.get("/admin-get-courses", AdmingetCourses)
-router.get("/admin-get-course/:id", AdmingetCourse)
 router.post("/create-assignment", CreateAssignment)
 router.get('/get-assignments/:id', GetAssignments);
 router.put("/teacher-edit-assignment/:id", EditAssignment)
@@ -53,8 +53,11 @@ router.get("/get-assignment-submissions/:id", getAssignmentSubmissions)
 router.get("/get-quiz-submissions/:id", getQuizSubmissions)
 router.get("/get-course-students/:id", getCourseStudents)
 router.post("/send-email-notification",sendEmailNotification)
+router.put("/update-class-status/:id",updateClassStatusToEnded)
 
-
+//Admin Routes
+router.get("/admin-get-courses", AdmingetCourses)
+router.get("/admin-get-course/:id", AdmingetCourse)
 router.get("/admin-get-quizzes", adminGetQuizzes)
 router.delete("/admin-delete-quiz/:id", adminDeleteQuiz)
 router.get("/admin-get-assignments", adminGetAssignments)
