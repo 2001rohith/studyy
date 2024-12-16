@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import TeacherSidebar from '../components/TeacherSidebar'
 import io from 'socket.io-client'
-// import {getDeviceToken} from ".../firebase"
 
 const socket = io("http://localhost:8000");
 function TeacherCourses() {

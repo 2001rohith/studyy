@@ -8,7 +8,7 @@ const { createCourse, getCourses, DeleteCourse, getCourse, EditCourse,
     getQuizzes, DeleteQuiz, GetQuiz, EditQuiz, adminGetQuizzes, adminDeleteQuiz,
     adminGetAssignments, adminDeleteAssignment, studentEnrollment,
     studentGetAssignments, studentsubmitAssignment, studentGetQuizzes,
-    enrolledCourses, SubmitQuiz, getClasses, createClass, 
+    enrolledCourses, SubmitQuiz, getClasses, createClass,
     studentGetClasses,
     sendNotification,
     getNotifications,
@@ -16,15 +16,14 @@ const { createCourse, getCourses, DeleteCourse, getCourse, EditCourse,
     addClassPeerId,
     EditClass,
     deleteClass,
-    getAssignmentSubmission,
     getAssignmentSubmissions,
     getQuizSubmissions,
     getCourseStudents,
     sendEmailNotification,
-    updateClassStatusToEnded} = require("../controllers/courseController")
+    updateClassStatusToEnded } = require("../controllers/courseController")
 const { homeCourses } = require("../controllers/studentController")
 
-//Teacher Routes
+//Teacher routes
 router.post("/create", createCourse)
 router.get("/get-courses", authMiddleware, getCourses)
 router.delete("/teacher-delete-course/:id", DeleteCourse)
@@ -44,18 +43,18 @@ router.delete("/teacher-delete-quiz/:id", DeleteQuiz)
 router.get("/get-quiz/:id", GetQuiz)
 router.put("/teacher-edit-quiz/:id", EditQuiz)
 router.get("/teacher-get-classes/:id", getClasses)
-router.post("/send-notification",sendNotification)
+router.post("/send-notification", sendNotification)
 router.post("/add-class", createClass)
-router.put("/add-peerid/:id",addClassPeerId)
+router.put("/add-peerid/:id", addClassPeerId)
 router.put("/teacher-edit-class/:id", EditClass)
 router.delete("/teacher-delete-class/:id", deleteClass)
 router.get("/get-assignment-submissions/:id", getAssignmentSubmissions)
 router.get("/get-quiz-submissions/:id", getQuizSubmissions)
 router.get("/get-course-students/:id", getCourseStudents)
-router.post("/send-email-notification",sendEmailNotification)
-router.put("/update-class-status/:id",updateClassStatusToEnded)
+router.post("/send-email-notification", sendEmailNotification)
+router.put("/update-class-status/:id", updateClassStatusToEnded)
 
-//Admin Routes
+//Admin routes
 router.get("/admin-get-courses", AdmingetCourses)
 router.get("/admin-get-course/:id", AdmingetCourse)
 router.get("/admin-get-quizzes", adminGetQuizzes)
@@ -63,6 +62,7 @@ router.delete("/admin-delete-quiz/:id", adminDeleteQuiz)
 router.get("/admin-get-assignments", adminGetAssignments)
 router.delete("/admin-delete-assignment/:id", adminDeleteAssignment)
 
+//Student routes
 router.post("/student-enroll", studentEnrollment)
 router.get("/enrolled-courses/:id", enrolledCourses)
 router.get("/student-get-assignments/:id", studentGetAssignments)
@@ -71,9 +71,6 @@ router.get("/student-get-quizzes/:id", studentGetQuizzes)
 router.post("/student-submit-quiz", SubmitQuiz)
 router.get("/student-get-classes/:id", studentGetClasses)
 router.get("/get-notifications/:id", getNotifications)
-router.post("/mark-notifications-as-read",markNotificationsAsRead)
-
-
-
+router.post("/mark-notifications-as-read", markNotificationsAsRead)
 
 module.exports = router

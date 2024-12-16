@@ -1,6 +1,5 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
 import SignUp from "./pages/Auth/SignUp"
 import Login from './pages/Auth/Login';
 import Otp from './pages/Auth/Otp';
@@ -51,20 +50,6 @@ import TeacherEditClass from './pages/Teacher/TeacherEditClass';
 
 
 function App() {
-  // useEffect(() => {
-  //   const handlePopState = () => {
-  //     const token = localStorage.getItem('token');
-  //     if (!token) {
-  //       navigate("/", { replace: true });
-  //     }
-  //   };
-
-  //   window.addEventListener("popstate", handlePopState);
-
-  //   return () => {
-  //     window.removeEventListener("popstate", handlePopState);
-  //   };
-  // }, [navigate]);
   return (
     <>
       <Router>
@@ -175,16 +160,6 @@ function App() {
               <TeacherProfile />
             </>
           } />
-          {/* <Route path='/admin-students' element={
-            <>
-             <AdminStudents/>
-            </>
-          } /> */}
-          {/* <Route path='/admin-unverified-teachers' element={
-            <>
-             <AdminUnverifiedTeachers/>
-            </>
-          } /> */}
           <Route path='/forgot-password' element={
             <>
               <ForgotPassword />
@@ -195,11 +170,6 @@ function App() {
               <ResetPassword />
             </>
           } />
-          {/* <Route path='/teacher-students' element={
-            <>
-             <TeacherStudents/>
-            </>
-          } /> */}
           <Route path='/teacher-view-courses' element={
             <>
               <TeacherCourses />

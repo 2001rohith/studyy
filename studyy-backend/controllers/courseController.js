@@ -6,8 +6,7 @@ const Quiz = require("../models/quizModel")
 const Class = require("../models/classModel")
 const Notification = require("../models/notificationModel")
 const sendEmail = require("../helpers/sendEmail")
-const sendPushNotifications = require("../fire-base/sendPushNotifications")
-
+// const sendPushNotifications = require("../fire-base/sendPushNotifications")
 
 exports.getStudents = async (req, res) => {
     try {
@@ -35,14 +34,12 @@ exports.getCourses = async (req, res) => {
             studentCount: course.studentsEnrolled.length || 0,
             assignmentCount: course.assignments.length || 0
         }));
-
         res.json({ status: "ok", courses: coursesToSend, message: "Course list for teacher" });
     } catch (error) {
         console.error("Get courses error:", error.message);
         res.status(500).json({ message: "Server error" });
     }
 };
-
 
 const generateRandomId = (length) => {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -53,20 +50,15 @@ const generateRandomId = (length) => {
     return result;
 };
 
-
 exports.createCourse = async (req, res) => {
     const { title, description, userId } = req.body;
-
     const teacher = await User.findById(userId)
-
     if (!userId) {
         return res.status(401).json({ message: 'Unauthorized. Please log in.' });
     }
-
     if (teacher.isTeacherVerified === false) {
         return res.status(403).json({ message: "Only verified teachers can create a course.  Wait for your verification!" });
     }
-
     try {
         const newCourse = new Course({
             courseId: generateRandomId(6),
@@ -74,9 +66,7 @@ exports.createCourse = async (req, res) => {
             description,
             teacher: userId,
         });
-
         await newCourse.save();
-
         res.status(201).json({ status: "ok", message: 'Course created successfully', course: newCourse });
     } catch (error) {
         console.error(error.message);
@@ -138,7 +128,6 @@ exports.createModule = async (req, res) => {
     if (!pdfPath) {
         return res.status(400).json({ message: "PDF file is required" })
     }
-
     try {
         const newModule = new Module({
             course: courseId,
@@ -147,7 +136,6 @@ exports.createModule = async (req, res) => {
             pdfPath,
             videoPath
         })
-
         await newModule.save()
         res.status(201).json({ message: "Module created successfully", module: newModule })
     } catch (error) {
@@ -190,7 +178,6 @@ exports.EditModule = async (req, res) => {
     }
 }
 
-
 exports.AdmingetCourses = async (req, res) => {
     try {
         const courses = await Course.find().sort({ createdAt: -1 }).populate('teacher', 'name')
@@ -206,7 +193,6 @@ exports.AdmingetCourses = async (req, res) => {
                 }
             })
         )
-
         res.status(200).json({ status: 'ok', courses: courseToSend, message: "Courses for admin" })
     } catch (error) {
         console.error("Admin get courses error:", error.message);
@@ -225,7 +211,6 @@ exports.AdmingetCourse = async (req, res) => {
             description: course.description,
             teacher: teacher.name
         }
-
         if (!course) return res.status(404).json({ message: "no course found" })
         console.log(course)
         res.status(200).json({ status: "ok", course: courseToSend, modules, message: "fetched course succesfully" })
@@ -258,7 +243,6 @@ exports.GetAssignments = async (req, res) => {
             course: assignment.course ? assignment.course.title : "unknown assignment",
             submissions: assignment.submissions
         }))
-
         res.status(200).json({ status: 'ok', assignments: assignmentWithCourse, course: course.title });
     } catch (error) {
         console.error("get assignments error:", error.message);
@@ -273,30 +257,27 @@ exports.CreateAssignment = async (req, res) => {
         if (!course) {
             return res.status(404).json({ message: "Course not found." });
         }
-
         const newAssignment = new Assignment({
             title,
             description,
             dueDate,
             course: courseId
         });
-
         await newAssignment.save();
         if (!course.assignments.includes(newAssignment._id)) {
             course.assignments.push(newAssignment._id)
             await course.save()
         }
-
         res.status(201).json({
             message: "Assignment created successfully.",
             assignment: newAssignment
         });
-
     } catch (error) {
         console.error("Error creating assignment:", error);
         res.status(500).json({ message: "An error occurred while creating the assignment." });
     }
 }
+
 exports.EditAssignment = async (req, res) => {
     const _id = req.params.id
     const { title, description, dueDate } = req.body
@@ -340,7 +321,8 @@ exports.addQuiz = async (req, res) => {
         console.error("Error adding quiz:", error.message);
         res.status(500).json({ status: "error", message: "Failed to create quiz" });
     }
-};
+}
+
 exports.getQuizzes = async (req, res) => {
     const courseId = req.params.id;
     console.log("course id from get Quizzes:", courseId)
@@ -359,7 +341,7 @@ exports.getQuizzes = async (req, res) => {
         console.error("Error retrieving quizzes:", error.message);
         res.status(500).json({ status: "error", message: "Failed to retrieve quizzes." });
     }
-};
+}
 
 exports.DeleteQuiz = async (req, res) => {
     const Id = req.params.id
@@ -408,7 +390,7 @@ exports.EditQuiz = async (req, res) => {
         console.error("Error updating quiz:", error.message);
         res.status(500).json({ message: "Server error" });
     }
-};
+}
 
 exports.adminGetQuizzes = async (req, res) => {
     try {
@@ -494,9 +476,8 @@ exports.adminDeleteAssignment = async (req, res) => {
 
 exports.studentEnrollment = async (req, res) => {
     const { courseId, studentId } = req.body
-    console.log("course id from student enrollment:", courseId)
-    console.log("student id from student enrollment:", studentId)
-
+    // console.log("course id from student enrollment:", courseId)
+    // console.log("student id from student enrollment:", studentId)
     try {
         const student = await User.findById(studentId)
         const course = await Course.findById(courseId)
@@ -507,16 +488,16 @@ exports.studentEnrollment = async (req, res) => {
             await course.save()
         }
         if (!student.enrolledCourses.includes(courseId)) {
-            student.enrolledCourses.push(courseId);
-            await student.save();
+            student.enrolledCourses.push(courseId)
+            await student.save()
         }
-
         res.status(200).json({ message: "student enrollment success" })
     } catch (error) {
         console.error("student enrollement error:", error.message);
         res.status(500).json({ message: "Server error" });
     }
 }
+
 exports.studentGetAssignments = async (req, res) => {
     const studentId = req.params.id
     console.log("student id from get assignments:", studentId)
@@ -526,9 +507,7 @@ exports.studentGetAssignments = async (req, res) => {
         if (!student) {
             return res.status(404).json({ message: 'Student not found' });
         }
-
         const courseIds = student.enrolledCourses.map(course => course._id);
-
         const assignments = await Assignment.find({ course: { $in: courseIds } })
             .populate({
                 path: "course",
@@ -555,14 +534,11 @@ exports.studentGetAssignments = async (req, res) => {
 exports.studentsubmitAssignment = async (req, res) => {
     const assignmentId = req.params.id
     const studentId = req.body.studentId;
-
     try {
         const assignment = await Assignment.findById(assignmentId);
-
         if (!assignment) {
             return res.status(404).json({ message: 'Assignment not found' });
         }
-
         const currentDate = new Date();
         const dueDate = new Date(assignment.dueDate);
 
@@ -597,18 +573,14 @@ exports.studentGetQuizzes = async (req, res) => {
         if (!student) {
             return res.status(404).json({ message: 'Student not found' });
         }
-
         const courseIds = student.enrolledCourses.map(course => course._id);
-
         const quizzes = await Quiz.find({ course: { $in: courseIds } })
             .populate({
                 path: "course",
                 select: "title"
             });
-
         const quizWithCourse = quizzes.map(quiz => {
             const studentSubmission = quiz.submissions.find(sub => String(sub.student) === String(studentId));
-
             return {
                 _id: quiz._id,
                 title: quiz.title,
@@ -623,8 +595,6 @@ exports.studentGetQuizzes = async (req, res) => {
                 submissions: quiz.submissions.length
             };
         });
-
-
         console.log("Quiz data for student:", quizWithCourse);
         res.status(200).json({ message: "Fetched the quizzes", quizzes: quizWithCourse });
     } catch (error) {
@@ -632,7 +602,6 @@ exports.studentGetQuizzes = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
-
 
 exports.enrolledCourses = async (req, res) => {
     const userId = req.params.id
@@ -674,7 +643,7 @@ exports.SubmitQuiz = async (req, res) => {
         console.error('Error submitting quiz:', error);
         res.status(500).json({ message: 'Failed to submit quiz' });
     }
-};
+}
 
 exports.getClasses = async (req, res) => {
     const courseId = req.params.id
@@ -819,7 +788,6 @@ exports.markNotificationsAsRead = async (req, res) => {
     }
 };
 
-
 exports.addClassPeerId = async (req, res) => {
     const classId = req.params.id;
     const { peerId } = req.body;
@@ -863,12 +831,12 @@ exports.addClassPeerId = async (req, res) => {
 
 exports.EditClass = async (req, res) => {
     const classId = req.params.id;
-    const { title, time, date, duration,status } = req.body;
+    const { title, time, date, duration, status } = req.body;
 
     try {
         const updatedClass = await Class.findByIdAndUpdate(
             classId,
-            { title, time, date, duration,status },
+            { title, time, date, duration, status },
             { new: true, runValidators: true }
         );
 
@@ -999,7 +967,7 @@ exports.updateClassStatusToEnded = async (req, res) => {
         const selectedClass = await Class.findById(classId)
         selectedClass.status = "Ended"
         await selectedClass.save()
-        res.status(200).json({message:"Class Status updated"})
+        res.status(200).json({ message: "Class Status updated" })
     } catch (error) {
         console.error('Error setting class status as ended:', error);
         res.status(500).json({ error: 'Error setting class status as ended.' });
@@ -1018,59 +986,3 @@ exports.dashboardData = async (req, res) => {
     }
 }
 
-// exports.sendEmailNotification = async (req, res) => {
-//     const { courseId, message } = req.body;
-
-//     try {
-//         const course = await Course.findById(courseId).populate('studentsEnrolled');
-//         if (!course) return res.status(404).json({ error: 'Course not found' });
-
-//         const title = `Notification from ${course.title}`;
-//         const studentEmails = course.studentsEnrolled.map(student => student.email);
-//         const deviceTokens = course.studentsEnrolled
-//             .map(student => student.deviceToken)
-//             .filter(Boolean); // Ensure no undefined/null tokens
-
-//         const emailPromises = studentEmails.map(email =>
-//             sendEmail(email, title, message)
-//         );
-//         const emailResults = await Promise.allSettled(emailPromises);
-
-//         const failedEmails = emailResults.filter(result => result.status === 'rejected');
-//         if (failedEmails.length > 0) {
-//             console.error('Failed to send emails to the following recipients:', failedEmails);
-//         }
-
-//         let pushResults = null;
-//         if (deviceTokens.length > 0) {
-//             try {
-//                 pushResults = await sendPushNotifications(deviceTokens, title, message);
-//                 if (pushResults.failureCount > 0) {
-//                     console.error(
-//                         'Failed push notifications:',
-//                         pushResults.responses.filter(res => res.error)
-//                     );
-//                 }
-//             } catch (pushError) {
-//                 console.error('Error sending push notifications:', pushError);
-//             }
-//         }
-
-//         res.status(200).json({
-//             message: 'Notifications sent successfully!',
-//             emailSummary: {
-//                 sent: emailResults.length - failedEmails.length,
-//                 failed: failedEmails.length,
-//             },
-//             pushSummary: pushResults
-//                 ? {
-//                       sent: pushResults.successCount,
-//                       failed: pushResults.failureCount,
-//                   }
-//                 : null,
-//         });
-//     } catch (error) {
-//         console.error('Error sending notifications:', error);
-//         res.status(500).json({ error: 'Failed to send notifications.' });
-//     }
-// };

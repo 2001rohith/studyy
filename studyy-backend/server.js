@@ -7,14 +7,12 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const http = require("http")
 
-const { Server } = require("socket.io");
+// const { Server } = require("socket.io");
 
 dotenv.config();
-
 const PORT = 8000;
 
-
-// MongoDB connection
+//MongoDB connection
 mongoose.connect(process.env.MONGO_URL)
     .then(() => console.log("MongoDB connected"))
     .catch(err => console.log(err));
@@ -34,7 +32,7 @@ app.use(passport.initialize());
 app.use(cookieParser());
 require("./config/passport");
 
-// Routes
+//Routes
 const userRoutes = require("./routes/userRoutes");
 const courseRoutes = require("./routes/courseRoutes");
 app.use("/user", userRoutes);
@@ -56,14 +54,14 @@ const io = require("socket.io")(httpServer, {
 
 io.on("connection", (socket) => {
     console.log("A user connected:", socket.id);
-  
+
     socket.on('send-message', ({ classId, userName, message }) => {
         console.log(`Message from ${userName} in class ${classId}: ${message}`);
 
         io.to(classId).emit('receive-message', { userName, message });
     });
 
-    socket.on('end-live-class', ({ classId}) => {
+    socket.on('end-live-class', ({ classId }) => {
         console.log(`teacher ended class`);
         io.to(classId).emit('teacher-ended-class');
     });
@@ -74,16 +72,16 @@ io.on("connection", (socket) => {
     });
 
     socket.on("notificationAdded", ({ courseId, teacherId }) => {
-      console.log(`Notification added for course: ${courseId} by teacher: ${teacherId}`);
-  
-      io.emit("newNotification", { courseId });
+        console.log(`Notification added for course: ${courseId} by teacher: ${teacherId}`);
+
+        io.emit("newNotification", { courseId });
     });
-  
+
     socket.on("disconnect", () => {
-      console.log("A user disconnected:", socket.id);
+        console.log("A user disconnected:", socket.id);
     });
-  });
-  
+});
+
 httpServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

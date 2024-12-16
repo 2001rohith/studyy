@@ -8,12 +8,10 @@ const {getStudents} = require("../controllers/courseController")
 const isAdmin = require("../middlewares/isAdmin")
 const {upload} = require("../middlewares/uploadMiddleware")
 
-
 router.post("/signup" ,signUp)
 router.post("/verify-otp", verifyOtp)
 router.post("/resend-otp", resendOtp)
 router.post("/login",Login)
-
 router.get("/auth/google",passport.authenticate("google",{scope:["profile","email"]}))
 router.get("/auth/google/callback", passport.authenticate("google",{session:false,failureRedirect:"/login"}),
 (req,res)=>{
@@ -28,12 +26,10 @@ router.get("/auth/google/callback", passport.authenticate("google",{session:fals
         res.redirect(`http://localhost:3000/select-role?token=${token}`);
       }
 })
-
 router.post("/select-role",upload.single("certificate"),authMiddleware,selectRole)
 
 router.get("/get-users",isAdmin,getUsers)
 router.get("/get-teachers",isAdmin,getTeachers)
-
 
 router.put("/admin-update-user/:id",UpdateUser )
 router.delete("/admin-delete-user/:id",DeleteUser)
@@ -47,6 +43,5 @@ router.post('/reset-password/:token', resetPassword);
 router.get("/get-students", getStudents)
 router.post('/change-password/:id', UserChangePassword);
 router.put("/edit-profile/:id",editProfile )
-
 
 module.exports = router

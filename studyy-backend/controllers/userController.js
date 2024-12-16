@@ -4,11 +4,9 @@ const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const sendOTP = require("../helpers/sendOTP")
 const sendEmail = require("../helpers/sendEmail")
-const e = require("cors")
 const { v4: uuidv4 } = require("uuid")
 const { UserRefreshClient } = require("google-auth-library")
 const crypto = require("crypto")
-// const nodemailer = require("nodemailer")
 
 exports.signUp = async (req, res) => {
     const { name, email, password } = req.body
