@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 const TeacherEditClass = () => {
     const navigate = useNavigate();
@@ -42,23 +52,21 @@ const TeacherEditClass = () => {
         }
 
         try {
-            const response = await fetch(`http://localhost:8000/course/teacher-edit-class/${Class._id}`, {
-                method: 'PUT',
+            
+            const response = await apiClient.put(`/course/teacher-edit-class/${Class._id}`, {
+                title: trimmedTitle,
+                date,
+                time,
+                duration,
+                status
+            }, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify({
-                    title: trimmedTitle,
-                    date,
-                    time,
-                    duration,
-                    status
-                })
             });
 
-            const data = await response.json();
-            if (data.status === 'ok') {
+            const data = response.data;
+            if (response.status === 200) {
                 navigate("/teacher-view-classes", { state: { id: courseId } });
             } else {
                 setMessage(data.message);

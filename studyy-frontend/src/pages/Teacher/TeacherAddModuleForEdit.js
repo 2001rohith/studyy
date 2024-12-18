@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import TeacherSidebar from '../components/TeacherSidebar';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Accept': 'application/json',
+    },
+});
+
 
 function TeacherAddModuleForEdit() {
     const location = useLocation();
@@ -36,16 +46,15 @@ function TeacherAddModuleForEdit() {
 
         try {
             setLoading(true);
-            const response = await fetch('http://localhost:8000/course/teacher-add-module', {
-                method: 'POST',
+            
+            const response = await apiClient.post(`/course/teacher-add-module`, formData, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: formData,
             });
 
-            const data = await response.json();
-            if (response.ok) {
+            const data = response.data;
+            if (response.status === 200) {
                 setMessage(data.message)
                 setShowToast(!showToast)
                 setTimeout(() => {

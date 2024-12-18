@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function AdminHome() {
     const navigate = useNavigate()
-    // const location = useLocation()
     // const email = location.state?.user.email
     const [users, setUsers] = useState([])
     const [filteredUsers, setFilteredUsers] = useState([])
@@ -21,13 +30,13 @@ function AdminHome() {
     useEffect(() => {
         const getUsers = async () => {
             try {
-                const response = await fetch("http://localhost:8000/user/get-users", {
-                    method: "GET",
+                const response = await apiClient.get('/user/get-users', {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                })
-                let data = await response.json()
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                });
+
+                const data = response.data;
                 setUsers(data.users)
                 setFilteredUsers(data.users)
             } catch (error) {
@@ -78,13 +87,13 @@ function AdminHome() {
     // }
     const handleDelete = async () => {
         try {
-            const response = await fetch(`http://localhost:8000/user/admin-delete-user/${selectedUser._id}`, {
-                method: "DELETE",
+            const response = await apiClient.delete(`/user/admin-delete-user/${selectedUser._id}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            })
-            if (response.ok) {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
+
+            if (response.status === 200) {
                 setToastMessage("User deleted successfully");
                 setShowToast(true);
                 setUsers(users.filter(user => user._id !== selectedUser._id));
@@ -102,16 +111,14 @@ function AdminHome() {
     const handleBlock = async () => {
 
         try {
-            const response = await fetch(`http://localhost:8000/user/admin-block-user/${selectedUser._id}`, {
-                method: 'PUT',
+            const response = await apiClient.put(`/user/admin-block-user/${selectedUser._id}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
+                },
             });
 
-            if (response.ok) {
-                const data = await response.json();
+            const data = response.data;
+            if (response.status === 200) {
                 setToastMessage(data.message)
                 setShowToast(true);
                 const updatedUsers = users.map(user =>

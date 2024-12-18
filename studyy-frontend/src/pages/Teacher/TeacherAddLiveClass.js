@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 const TeacherAddLiveClass = () => {
     const navigate = useNavigate();
@@ -22,26 +32,24 @@ const TeacherAddLiveClass = () => {
         setLoading(true);
 
         try {
-            const response = await fetch(`http://localhost:8000/course/add-class`, {
-                method: 'POST',
+            
+            const response = await apiClient.post(`/course/add-class`, {
+                courseId,
+                title,
+                date,
+                time,
+                duration,
+                teacherId: user.id,
+            }, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify({
-                    courseId,
-                    title,
-                    date,
-                    time,
-                    duration,
-                    teacherId: user.id,
-                })
             });
 
-            const data = await response.json();
-            if (data.status === 'ok') {
+            const data = response.data;
+            if (response.status === 200) {
                 setMessage(data.message);
-                setShowModal(true);  // Show modal on success
+                setShowModal(true);  
             } else {
                 setMessage(data.message);
                 setError('Failed to add the class');
@@ -134,7 +142,7 @@ const TeacherAddLiveClass = () => {
                                     <small className="form-check-label ms-2">Start live</small> */}
                                 </div>
                                 <button className="btn btn-secondary mt-3" type="submit">
-                                    {loading ? 'Adding...' : 'Add'}                                
+                                    {loading ? 'Adding...' : 'Add'}
                                 </button>
                             </form>
                         </div>

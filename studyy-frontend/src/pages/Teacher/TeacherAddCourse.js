@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Accept': 'application/json',
+    },
+});
 
 const TeacherAddCourse = () => {
     const location = useLocation();
@@ -31,17 +40,15 @@ const TeacherAddCourse = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:8000/course/create', {
-                method: 'POST',
+
+            const response = await apiClient.post(`/course/create`, { title: trimmedTitle, description: trimmedDescription, userId }, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify({ title: trimmedTitle, description: trimmedDescription, userId })
             });
 
-            const data = await response.json();
-            if (response.ok) {
+            const data = response.data;
+            if (response.status === 200) {
                 setMessage("Course created successfully.");
                 setCourseId(data.course._id)
             } else {
@@ -70,16 +77,15 @@ const TeacherAddCourse = () => {
 
 
         try {
-            const response = await fetch('http://localhost:8000/course/teacher-add-module', {
-                method: 'POST',
+            
+            const response = await apiClient.post(`/course/teacher-add-module`,formData, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: formData
             });
 
-            const data = await response.json()
-            if (response.ok) {
+            const data = response.data;
+            if (response.status === 200) {
                 // alert("Module created!")
                 setMessage("Module added successfully.");
             } else {
@@ -174,7 +180,7 @@ const TeacherAddCourse = () => {
                                     value={moduleTitle}
                                     onChange={(e) => setModuleTitle(e.target.value)}
                                     required
-                                    disabled={!courseId} 
+                                    disabled={!courseId}
                                 />
                                 <textarea
                                     className="form-control mb-3"

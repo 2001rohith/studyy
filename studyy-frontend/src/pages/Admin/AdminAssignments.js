@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar2 from '../components/Sidebar2';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function AdminAssignments() {
     const navigate = useNavigate();
@@ -16,15 +26,14 @@ function AdminAssignments() {
 
     const getAssignments = async () => {
         try {
-            const response = await fetch("http://localhost:8000/course/admin-get-assignments", {
-                method: "GET",
+            const response = await apiClient.get('/course/admin-get-assignments', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
             });
 
-            const data = await response.json();
-            if (data.status === "ok") {
+            const data = response.data;
+            if (response.status === 200) {
                 setAssignments(data.assignments || []);
                 setAllAssignments(data.assignments || []);
                 setLoading(false);
@@ -60,15 +69,13 @@ function AdminAssignments() {
     const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this assignment?')) return;
         try {
-            const response = await fetch(`http://localhost:8000/course/admin-delete-assignment/${id}`, {
-                method: "DELETE",
+            const response = await apiClient.delete(`/course/admin-delete-assignment/${id}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
             });
-            if (response.ok) {
+            if (response.status === 200) {
                 alert("Assignment deleted successfully");
                 const updatedAssignments = assignments.filter(assignment => assignment._id !== id);
                 setAssignments(updatedAssignments);

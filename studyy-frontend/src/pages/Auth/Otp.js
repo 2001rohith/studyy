@@ -1,57 +1,50 @@
-import React, { useState, useEffect } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
+import API_URL from '../../axiourl'; 
 
+const apiClient = axios.create({
+    baseURL: API_URL, 
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function Otp() {
-    const [otp, setOtp] = useState('')
-    const [message, setMessage] = useState('OTP has been send to your email!')
-    const [timer, setTimer] = useState(120)
-    // const [token, setToken] = useState('')
-    const [isresenddisabled, setresendDisabled] = useState(true)
-    const location = useLocation()
-    const navigate = useNavigate()
-    const email = location.state?.email
+    const [otp, setOtp] = useState('');
+    const [message, setMessage] = useState('OTP has been sent to your email!');
+    const [timer, setTimer] = useState(120);
+    const [isResendDisabled, setResendDisabled] = useState(true);
+    const location = useLocation();
+    const navigate = useNavigate();
+    const email = location.state?.email;
 
-    const handlesubmit = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // console.log("OTP:", otp)
         try {
             if (!otp) {
-                setMessage("Enter the OTP")
-                return
+                setMessage("Enter the OTP");
+                return;
             }
             if (otp.length < 6) {
-                setMessage("Too short for OTP")
-                return
+                setMessage("Too short for OTP");
+                return;
             }
 
-            const response = await fetch("http://localhost:8000/user/verify-otp", {
-                method: 'POST',
-                crossDomain: true,
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                },
-                body: JSON.stringify({
-                    email,
-                    otp,
-                }),
-            });
-            const data = await response.json();
-            setMessage(data.message)
-            if (data.status === "ok") {
-                const token = data.token
-                console.log("token from otp", token)
+            const response = await apiClient.post('/user/verify-otp', { email, otp });
+            const data = response.data;
+            setMessage(data.message);
+            if (data.status === 'ok') {
+                const token = data.token;
                 localStorage.setItem('token', token);
                 localStorage.setItem('email', email);
-                navigate("/select-role", { state: { email, token } })
+                navigate("/select-role", { state: { email, token } });
             }
-            // console.log("otpverify-response", data);
         } catch (error) {
-            console.error("Error during signup:", error);
+            console.error("Error during OTP verification:", error);
         }
-    }
+    };
 
     useEffect(() => {
         let countdown = null;
@@ -60,63 +53,61 @@ function Otp() {
                 setTimer((prevTime) => prevTime - 1);
             }, 1000);
         } else {
-            setresendDisabled(false)
+            setResendDisabled(false);
         }
 
         return () => clearInterval(countdown);
-    }, [timer])
+    }, [timer]);
 
     const handleResendOtp = async () => {
         try {
-            setresendDisabled(true);
+            setResendDisabled(true);
             setTimer(120);
 
-            const response = await fetch("http://localhost:8000/user/resend-otp", {
-                method: 'POST',
-                crossDomain: true,
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                },
-                body: JSON.stringify({ email })
-            });
-
-            const data = await response.json();
+            const response = await apiClient.post('/user/resend-otp', { email });
+            const data = response.data;
             setMessage(data.message);
         } catch (error) {
             console.error("Error during resending OTP:", error);
         }
-    }
+    };
 
     return (
-        <>
-            <div className='wrapper'>
-                <div className='container login-boxx'>
-                    <div className='login-items'>
-                        <h2 className='heading'>Verify OTP</h2>
-                        <div className='input'>
-                            <h6 className='warning-text text-center'>{message}</h6>
-                            <form className='form'>
-                                <input className='form-control text-start text-dark' onChange={(e) => setOtp(e.target.value)} type="text" name='otp' placeholder='Enter otp' />
-                                <button className='btn btn-primary sign-in-button my-1' onClick={handlesubmit}>Verify</button>
-                            </form>
-                        </div>
-                        {timer > 0 ? (
-                            <p>Resend OTP in {Math.floor(timer / 60)}:{("0" + (timer % 60)).slice(-2)} minutes</p>
-                        ) : (
-                            <p>OTP expired, you can resend it now.</p>
-                        )}
-                        <button
-                            className='btn btn-secondary my-1'
-                            onClick={handleResendOtp}
-                            disabled={isresenddisabled}
-                        >Resend</button>
+        <div className='wrapper'>
+            <div className='container login-boxx'>
+                <div className='login-items'>
+                    <h2 className='heading'>Verify OTP</h2>
+                    <div className='input'>
+                        <h6 className='warning-text text-center'>{message}</h6>
+                        <form className='form'>
+                            <input
+                                className='form-control text-start text-dark'
+                                onChange={(e) => setOtp(e.target.value)}
+                                type="text"
+                                name='otp'
+                                placeholder='Enter OTP'
+                            />
+                            <button className='btn btn-primary sign-in-button my-1' onClick={handleSubmit}>
+                                Verify
+                            </button>
+                        </form>
                     </div>
+                    {timer > 0 ? (
+                        <p>Resend OTP in {Math.floor(timer / 60)}:{("0" + (timer % 60)).slice(-2)} minutes</p>
+                    ) : (
+                        <p>OTP expired, you can resend it now.</p>
+                    )}
+                    <button
+                        className='btn btn-secondary my-1'
+                        onClick={handleResendOtp}
+                        disabled={isResendDisabled}
+                    >
+                        Resend
+                    </button>
                 </div>
             </div>
-        </>
-    )
+        </div>
+    );
 }
 
-export default Otp
+export default Otp;

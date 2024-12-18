@@ -1,13 +1,24 @@
 import { useState } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar';
-import { useLocation,useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
+
 
 const TeacherAddAssignment = () => {
     const location = useLocation();
     const navigate = useNavigate()
     const cId = location.state?.courseId;
-    const [courseId,setCourseId] = useState(cId)
-    console.log("course id from add assignmrnt",courseId)
+    const [courseId, setCourseId] = useState(cId)
+    console.log("course id from add assignmrnt", courseId)
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState("")
@@ -25,17 +36,15 @@ const TeacherAddAssignment = () => {
         }
 
         try {
-            const response = await fetch("http://localhost:8000/course/create-assignment", {
-                method: 'POST',
+            
+            const response = await apiClient.post(`/course/create-assignment`, { title: trimmedTitle, description, dueDate: deadlineDate, courseId }, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify({ title: trimmedTitle, description,dueDate: deadlineDate, courseId })
             });
 
-            const data = await response.json();
-            if (response.ok) {
+            const data = response.data;
+            if (response.status === 200) {
                 setMessage(data.message)
             } else {
                 setMessage(data.message || "Error occurred while creating the assignment.");
@@ -46,8 +55,8 @@ const TeacherAddAssignment = () => {
         }
     };
 
-    const goback = async ()=>{
-        navigate("/teacher-view-assignments",{ state: { id:courseId } })
+    const goback = async () => {
+        navigate("/teacher-view-assignments", { state: { id: courseId } })
 
     }
 

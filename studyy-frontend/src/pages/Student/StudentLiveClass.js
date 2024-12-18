@@ -4,8 +4,18 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import StudentSidebar from '../components/StudentSidebar'
 import '../css/TeacherLiveClass.css';
 import io from 'socket.io-client';
+// import axios from 'axios';
+import API_URL from '../../axiourl';
 
-const socket = io('http://localhost:8000');
+// const apiClient = axios.create({
+//   baseURL: API_URL,
+//   headers: {
+//     'Content-Type': 'application/json',
+//     'Accept': 'application/json',
+//   },
+// });
+
+const socket = io(`${API_URL}`);
 
 function StudentLiveClass() {
     const user = JSON.parse(localStorage.getItem("user"))

@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 const TeacherEditAssignment = () => {
     const navigate = useNavigate();
@@ -36,19 +46,16 @@ const TeacherEditAssignment = () => {
         }
 
         try {
-            const response = await fetch(`http://localhost:8000/course/teacher-edit-assignment/${assignment._id}`, {
-                method: 'PUT',
+           
+            const response = await apiClient.put(`/course/teacher-edit-assignment/${assignment._id}`, { title: trimmedTitle, description: trimmedDescription, dueDate }, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify({ title: trimmedTitle, description: trimmedDescription, dueDate })
             });
 
-            const data = await response.json();
+            const data = response.data;
             setMessage(data.message);
-
-            if (response.ok) {
+            if (response.status === 200) {
                 navigate("/teacher-view-assignments", { state: { id: courseId } });
             }
         } catch (error) {

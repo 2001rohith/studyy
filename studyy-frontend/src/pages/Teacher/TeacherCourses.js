@@ -2,8 +2,19 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import TeacherSidebar from '../components/TeacherSidebar'
 import io from 'socket.io-client'
+import axios from 'axios';
+import API_URL from '../../axiourl';
 
-const socket = io("http://localhost:8000");
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+});
+
+const socket = io(`${API_URL}`);
+
 function TeacherCourses() {
   const navigate = useNavigate()
   const user = JSON.parse(localStorage.getItem('user'));
@@ -27,17 +38,15 @@ function TeacherCourses() {
 
   const getCourses = async () => {
     try {
-      const response = await fetch("http://localhost:8000/course/get-courses", {
-        method: "GET",
+
+      const response = await apiClient.get(`/course/get-courses`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
 
-      let data = await response.json()
-      console.log("data from teacher home", data)
-
-      if (data.status === "ok") {
+      const data = response.data;
+      if (response.status === 200) {
         setCourses(data.courses)
       } else {
         setError('No courses or failed to fetch!')
@@ -67,17 +76,16 @@ function TeacherCourses() {
   }
 
   const handleDelete = async (id) => {
-    // if (!window.confirm('Are you sure you want to delete this course?')) return;
     try {
-      const response = await fetch(`http://localhost:8000/course/teacher-delete-course/${selectedCourse}`, {
-        method: "DELETE",
+
+      const response = await apiClient.delete(`/course/teacher-delete-course/${selectedCourse}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      const data = await response.json()
-      if (response.ok) {
-        // alert("Course deleted successfully");
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      const data = response.data;
+      if (response.status === 200) {
         setMessage(data.message)
         setCourses(courses.filter(course => course.id !== selectedCourse))
         setDeleteModal(!deleteModal)
@@ -106,21 +114,20 @@ function TeacherCourses() {
   const sendNotification = async (e) => {
     e.preventDefault()
     try {
-      const response = await fetch(`http://localhost:8000/course/send-notification`, {
-        method: "POST",
+      const response = await apiClient.post(`/course/send-notification`, {
+        message: notifationMessage,
+        courseId: selectedCourse,
+        userId: user.id
+      }, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({
-          message: notifationMessage,
-          courseId: selectedCourse,
-          userId: user.id
-        })
-      })
-      const data = await response.json()
+      });
+
+      const data = response.data;
       setMessage(data.message)
-      if (response.ok) {
+
+      if (response.status === 200) {
 
         socket.emit('notificationAdded', {
           courseId: selectedCourse,
@@ -144,21 +151,19 @@ function TeacherCourses() {
   const sendEmail = async (e) => {
     e.preventDefault()
     try {
-      const response = await fetch(`http://localhost:8000/course/send-email-notification`, {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          message: emailMessage,
-          courseId: selectedCourse,
-        })
-      })
-      const data = await response.json()
-      setMessage(data.message)
-      if (response.ok) {
 
+      const response = await apiClient.post(`/course/send-email-notification`, {
+        message: emailMessage,
+        courseId: selectedCourse,
+      }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      const data = response.data;
+      setMessage(data.message)
+      if (response.status === 200) {
 
         setSelectedCourse("")
         setTimeout(() => {
@@ -201,15 +206,15 @@ function TeacherCourses() {
 
   const handleViewStudents = async (id) => {
     try {
-      const response = await fetch(`http://localhost:8000/course/get-course-students/${id}`, {
-        method: "GET",
+      
+      const response = await apiClient.get(`/course/get-course-students/${id}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
       });
 
-      const data = await response.json();
-      if (response.ok) {
+      const data = response.data;
+      if (response.status === 200) {
         setStudents(data.students);
         setModal(true);
       } else {

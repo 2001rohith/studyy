@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import TeacherSidebar from '../components/TeacherSidebar';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function TeacherQuizzes() {
     const navigate = useNavigate();
@@ -23,15 +33,15 @@ function TeacherQuizzes() {
     useEffect(() => {
         const getQuizzes = async () => {
             try {
-                const response = await fetch(`http://localhost:8000/course/get-quizzes/${courseId}`, {
-                    method: "GET",
+
+                const response = await apiClient.get(`/course/get-quizzes/${courseId}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
                 });
 
-                const data = await response.json();
-                if (response.ok) {
+                const data = response.data;
+                if (response.status === 200) {
                     setQuizzes(data.quizzes);
                     setCourseName(data.courseName)
                 } else {
@@ -62,14 +72,15 @@ function TeacherQuizzes() {
     const handleDelete = async (id) => {
         // if (!window.confirm('Are you sure you want to delete this course?')) return;
         try {
-            const response = await fetch(`http://localhost:8000/course/teacher-delete-quiz/${quizId}`, {
-                method: "DELETE",
+
+            const response = await apiClient.delete(`/course/teacher-delete-quiz/${quizId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            })
-            const data = await response.json()
-            if (response.ok) {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
+
+            const data = response.data;
+            if (response.status === 200) {
                 setQuizzes(quizzes.filter(quiz => quiz._id !== quizId))
                 setDeleteModal(!deleteModal)
                 setQuizId("")
@@ -89,15 +100,15 @@ function TeacherQuizzes() {
 
     const getSubmissions = async (quizId) => {
         try {
-            const response = await fetch(`http://localhost:8000/course/get-quiz-submissions/${quizId}`, {
-                method: "GET",
+            
+            const response = await apiClient.get(`/course/get-quiz-submissions/${quizId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
             });
 
-            const data = await response.json();
-            if (response.ok) {
+            const data = response.data;
+            if (response.status === 200) {
                 setSubmissions(data.submissions);
                 setModal(true);
             } else {
@@ -180,11 +191,11 @@ function TeacherQuizzes() {
                                     </thead>
                                     <tbody>
                                         {submissions.map((submission, index) => (
-                                                <tr>
-                                                    <td>{submission.name}</td>
-                                                    <td>{submission.score}</td>
-                                                    <td>{new Date(submission.submittedAt).toLocaleString()}</td>
-                                                </tr>
+                                            <tr>
+                                                <td>{submission.name}</td>
+                                                <td>{submission.score}</td>
+                                                <td>{new Date(submission.submittedAt).toLocaleString()}</td>
+                                            </tr>
                                         ))}
                                     </tbody>
                                 </table>

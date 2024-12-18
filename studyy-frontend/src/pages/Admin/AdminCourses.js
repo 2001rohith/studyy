@@ -1,31 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar2 from '../components/Sidebar2';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+});
 
 function AdminCourses() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
-  const [courses, setCourses] = useState([]); 
-  const [allCourses, setAllCourses] = useState([]); 
-  const [loading, setLoading] = useState(true); 
-  const [error, setError] = useState(null); 
+  const [courses, setCourses] = useState([]);
+  const [allCourses, setAllCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [coursePerPage] = useState(5); 
-  const [courseID, setCourseID] = useState(''); 
-  const [currentCourses, setCurrentCourses] = useState([]); 
+  const [coursePerPage] = useState(5);
+  const [courseID, setCourseID] = useState('');
+  const [currentCourses, setCurrentCourses] = useState([]);
 
   const getCourses = async () => {
     try {
-      const response = await fetch("http://localhost:8000/course/admin-get-courses", {
-        method: "GET",
+      const response = await apiClient.get(`/course/admin-get-courses`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
       });
 
-      const data = await response.json();
-      if (response.ok) {
-        setCourses(data.courses || []); 
+      const data = response.data;
+      if (response.status === 200) {
+        setCourses(data.courses || []);
         setAllCourses(data.courses || []);
         setLoading(false);
       } else {
@@ -49,8 +58,8 @@ function AdminCourses() {
 
     const filteredCourses = courseID
       ? allCourses.filter(course =>
-          course.courseId?.toLowerCase().includes(courseID.toLowerCase())
-        )
+        course.courseId?.toLowerCase().includes(courseID.toLowerCase())
+      )
       : allCourses;
 
     setCurrentCourses(filteredCourses.slice(indexOfFirstCourse, indexOfLastCourse));
@@ -62,14 +71,13 @@ function AdminCourses() {
     if (!window.confirm('Are you sure you want to delete this course?')) return;
 
     try {
-      const response = await fetch(`http://localhost:8000/course/teacher-delete-course/${id}`, {
-        method: "DELETE",
+      const response = await apiClient.delete(`/course/teacher-delete-course/${id}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
       });
 
-      if (response.ok) {
+      if (response.status === 200) {
         alert("Course deleted successfully");
         const updatedCourses = courses.filter(course => course.id !== id);
         setCourses(updatedCourses);

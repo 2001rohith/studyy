@@ -1,6 +1,15 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import axios from 'axios';
+import API_URL from '../../axiourl'; 
 
+const apiClient = axios.create({
+    baseURL: API_URL, 
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function SignUp() {
     const [name, setName] = useState('')
@@ -48,26 +57,17 @@ function SignUp() {
                 return
             }
 
-            const response = await fetch("http://localhost:8000/user/signup", {
-                method: 'POST',
-                crossDomain: true,
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                },
-                body: JSON.stringify({
-                    name: trimmedName,
-                    email: trimmedEmail,
-                    password: trimmedPassword,
-                }),
+            const response = await apiClient.post('/user/signup', {
+                name: trimmedName,
+                email: trimmedEmail,
+                password: trimmedPassword,
             });
-            const data = await response.json();
+
+            const data = response.data;
             setMessage(data.message)
             console.log("status :", data.status)
             console.log("message :", data.message)
             if (data.status === "ok") {
-                // window.location.href = "./otp"
                 navigate("/otp", { state: { email } })
             }
 
@@ -78,9 +78,9 @@ function SignUp() {
     };
 
     const googleAuth = () => {
-        window.location.href = 'http://localhost:8000/user/auth/google'
+        window.location.href = `${API_URL}/user/auth/google`;
     };
-
+    
     return (
         <>
             <div className='wrapper'>

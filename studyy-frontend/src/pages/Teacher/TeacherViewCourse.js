@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import TeacherSidebar from '../components/TeacherSidebar'
+import axios from 'axios';
+import API_URL from '../../axiourl';
 
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function TeacherViewCourse() {
     const navigate = useNavigate()
@@ -25,13 +34,14 @@ function TeacherViewCourse() {
             console.log("course id again", courseId)
 
             try {
-                const response = await fetch(`http://localhost:8000/course/get-course/${courseId}`, {
-                    method: "GET",
+
+                const response = await apiClient.get(`/course/get-course/${courseId}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                })
-                let data = await response.json()
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                });
+
+                const data = response.data;
                 console.log("data from teacher home", data)
                 setCourse(data.course)
                 setModules(data.modules || [])
@@ -51,14 +61,15 @@ function TeacherViewCourse() {
     const deleteModule = async (id) => {
         // if (!window.confirm('Are you sure you want to delete this module?')) return;
         try {
-            const response = await fetch(`http://localhost:8000/course/teacher-delete-module/${moduleId}`, {
-                method: "DELETE",
+            
+            const response = await apiClient.delete(`/course/teacher-delete-module/${moduleId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            })
-            const data = await response.json()
-            if (response.ok) {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
+
+            const data = response.data;
+            if (response.status === 200) {
                 setModules(modules.filter(mod => mod._id !== moduleId))
                 setDeleteModal(!deleteModal)
                 setModuleId("")
@@ -77,7 +88,7 @@ function TeacherViewCourse() {
     }
 
     const handleViewPDF = (mod) => {
-        const backendOrigin = "http://localhost:8000";
+        const backendOrigin = `${API_URL}`;
         const formattedPath = `${backendOrigin}/${mod.pdfPath.replace(/\\/g, '/')}`.replace(/^\/+/, "");
 
         setSelectedModule({ ...mod, pdfPath: formattedPath });
@@ -85,7 +96,7 @@ function TeacherViewCourse() {
         setShowModal(true);
     };
     const handleViewVideo = (mod) => {
-        const backendOrigin = "http://localhost:8000";
+        const backendOrigin = `${API_URL}`;
         const videoPath = `${backendOrigin}/${mod.videoPath.replace(/\\/g, '/')}`.replace(/^\/+/, "");
 
         setSelectedModule({ ...mod, videoPath: videoPath });

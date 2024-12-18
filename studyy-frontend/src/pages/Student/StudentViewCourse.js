@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import StudentSidebar from '../components/StudentSidebar'
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function StudentViewCourse() {
     const navigate = useNavigate()
@@ -22,13 +32,14 @@ function StudentViewCourse() {
             console.log("course id again", courseId)
 
             try {
-                const response = await fetch(`http://localhost:8000/course/get-course/${courseId}`, {
-                    method: "GET",
+
+                const response = await apiClient.get(`/course/get-course/${courseId}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                })
-                let data = await response.json()
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                });
+
+                const data = response.data;
                 console.log("data from check course", data)
                 setCourse(data.course)
                 setModules(data.modules || [])
@@ -43,7 +54,7 @@ function StudentViewCourse() {
     }, [])
 
     const handleViewPDF = (mod) => {
-        const backendOrigin = "http://localhost:8000";
+        const backendOrigin = `${API_URL}`;
         const formattedPath = `${backendOrigin}/${mod.pdfPath.replace(/\\/g, '/')}`.replace(/^\/+/, "");
 
         setSelectedModule({ ...mod, pdfPath: formattedPath });
@@ -51,7 +62,7 @@ function StudentViewCourse() {
         setShowModal(true);
     };
     const handleViewVideo = (mod) => {
-        const backendOrigin = "http://localhost:8000";
+        const backendOrigin = `${API_URL}`;
         const videoPath = `${backendOrigin}/${mod.videoPath.replace(/\\/g, '/')}`.replace(/^\/+/, "");
 
         setSelectedModule({ ...mod, videoPath: videoPath });

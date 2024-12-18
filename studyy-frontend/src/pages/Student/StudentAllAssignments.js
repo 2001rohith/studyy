@@ -2,24 +2,35 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StudentSidebar from '../components/StudentSidebar';
 
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Accept': 'application/json',
+    },
+});
 function StudentAllAssignments() {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user'));
     const [loading, setLoading] = useState(true)
     const [assignments, setAssignments] = useState([]);
-    const fileInputRefs = useRef({}); // Ref to store file input for each assignment
+    const fileInputRefs = useRef({});
+    const [showToast, setShowToast] = useState(false)
+    const [message,setMessage] = useState("")
 
     useEffect(() => {
         const getAssignments = async () => {
             try {
-                const response = await fetch(`http://localhost:8000/course/student-get-assignments/${user.id}`, {
-                    method: "GET",
+                const response = await apiClient.get(`/course/student-get-assignments/${user.id}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
                 });
-                let data = await response.json();
-                if (response.ok) {
+
+                const data = response.data;
+                if (response.status === 200) {
                     setAssignments(data.assignments);
                     setLoading(false)
                     console.log("assignments:", data.assignments);
@@ -41,42 +52,60 @@ function StudentAllAssignments() {
 
     const handleFileChange = async (e, assignmentId) => {
         const file = e.target.files[0];
-        if (!file) return;
+        if (!file) {
+            alert('No file selected');
+            return;
+        }
 
         const formData = new FormData();
         formData.append('file', file);
         formData.append('studentId', user.id);
 
         try {
-            const response = await fetch(`http://localhost:8000/course/submit-assignment/${assignmentId}`, {
-                method: 'POST',
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Authentication token is missing');
+            }
+
+            const response = await apiClient.post(`/course/submit-assignment/${assignmentId}`, formData, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`,
                 },
-                body: formData
             });
 
-            const data = await response.json();
-            if (response.ok) {
-                alert('Assignment submitted successfully');
-                setAssignments(prevAssignments =>
-                    prevAssignments.map(a => a._id === assignmentId ? {
-                        ...a,
-                        submissions: Array.isArray(a.submissions) ? [...a.submissions, { student: user.id, filePath: 'path-to-file' }] : [{ student: user.id, filePath: 'path-to-file' }]
-                    } : a)
-                );
+            const data = response.data
 
+            if (response.status === 200) {
+               setMessage("Assignment Uploaded")
+               setShowToast(true)
+                setAssignments(prevAssignments =>
+                    prevAssignments.map(a =>
+                        a._id === assignmentId
+                            ? {
+                                ...a,
+                                submissions: Array.isArray(a.submissions)
+                                    ? [...a.submissions, { student: user.id, filePath: 'path-to-file' }]
+                                    : [{ student: user.id, filePath: 'path-to-file' }],
+                            }
+                            : a
+                    )
+                );
             } else {
-                const toastElement = document.getElementById('toast');
-                const toast = new bootstrap.Toast(toastElement);
-                document.getElementById('toast-message').textContent = data.message;
-                toast.show();
-                console.log("Error:", data.message);
+                console.log("Error:",data.message);
+                setMessage(data.message)
+                setShowToast(true)
             }
         } catch (error) {
-            console.error('Error submitting assignment:', error);
+            if (error.response) {
+                console.error('Server Error:', error.response.data);
+                
+            } else {
+                console.error('Error submitting assignment:', error.message);
+                
+            }
         }
     };
+
 
     if (loading) {
         return <div className="spinner-border text-primary spinner2" role="status">
@@ -141,16 +170,14 @@ function StudentAllAssignments() {
                     </div>
                 </div>
             </div>
-            <div className="toast-container position-fixed top-0 end-0 p-3">
-                <div id="toast" className="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                    <div className="d-flex">
-                        <div className="toast-body" id="toast-message">
-                            You have passed the due date!
-                        </div>
-                        <button type="button" className="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            {showToast && (
+                <div className="toast show position-fixed  bottom-0 end-0 m-3" style={{ borderRadius: "15px", backgroundColor: "#0056b3", color: "white" }}>
+                    <div className="toast-body">
+                        {message}
+                        <button type="button" className="btn-close ms-2 mb-1" onClick={() => setShowToast(false)}></button>
                     </div>
                 </div>
-            </div>
+            )}
         </>
     );
 }

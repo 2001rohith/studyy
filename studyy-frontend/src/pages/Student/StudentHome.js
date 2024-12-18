@@ -3,6 +3,16 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import StudentSidebar from '../components/StudentSidebar'
 import Footer from "../components/Footer"
 // const navigate = useNavigate()
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+});
 
 function StudentHome() {
   const user = JSON.parse(localStorage.getItem('user'));
@@ -13,13 +23,14 @@ function StudentHome() {
   useEffect(() => {
     const newCourse = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/course/home-get-courses/${user.id}`, {
-          method: "GET",
+        
+        const response = await apiClient.get(`/course/home-get-courses/${user.id}`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-        let data = await response.json()
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+
+        const data = response.data;
         setCourses(data.courses)
         setLoading(false)
       } catch (error) {

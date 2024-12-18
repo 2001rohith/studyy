@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import StudentSidebar from '../components/StudentSidebar';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+});
 
 function StudentAttendQuiz() {
   const [loading, setLoading] = useState(true);
@@ -69,15 +79,13 @@ function StudentAttendQuiz() {
     };
 
     try {
-      const response = await fetch('http://localhost:8000/course/student-submit-quiz', {
-        method: 'POST',
+      const response = await apiClient.post(`/course/student-submit-quiz`, submissionData,{
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify(submissionData),
       });
 
-      if (response.ok) {
+      if (response.status === 200) {
         alert('Quiz submitted successfully!');
         navigate('/student-view-quizzes');
       } else {

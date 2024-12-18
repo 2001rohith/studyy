@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StudentSidebar from '../components/StudentSidebar';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function StudentAllQuizzes() {
     const navigate = useNavigate();
@@ -12,14 +22,15 @@ function StudentAllQuizzes() {
     useEffect(() => {
         const getQuizzes = async () => {
             try {
-                const response = await fetch(`http://localhost:8000/course/student-get-quizzes/${user.id}`, {
-                    method: "GET",
+               
+                const response = await apiClient.get(`/course/student-get-quizzes/${user.id}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
                 });
-                let data = await response.json();
-                if (response.ok) {
+
+                const data = response.data;
+                if (response.status === 200) {
                     setQuizzes(data.quizzes);
                     setLoading(false)
                     console.log("quizzes:", data.quizzes);

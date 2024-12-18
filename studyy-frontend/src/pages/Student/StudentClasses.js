@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StudentSidebar from '../components/StudentSidebar';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function StudentClasses() {
     const navigate = useNavigate();
@@ -15,19 +25,15 @@ function StudentClasses() {
     useEffect(() => {
         const getClasses = async () => {
             try {
-                const response = await fetch(
-                    `http://localhost:8000/course/student-get-classes/${user.id}`,
-                    {
-                        method: "GET",
-                        headers: {
-                            Authorization: `Bearer ${localStorage.getItem('token')}`,
-                        },
-                    }
-                );
+                
+                const response = await apiClient.get(`/course/student-get-classes/${user.id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                });
 
-                const data = await response.json();
-
-                if (response.ok) {
+                const data = response.data;
+                if (response.status === 200) {
                     setClasses(data.classes);
                     // console.log("classes fetched:",data.classes)
                 } else {

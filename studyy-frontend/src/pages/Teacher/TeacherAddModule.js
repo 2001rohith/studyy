@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import TeacherSidebar from '../components/TeacherSidebar';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Accept': 'application/json',
+    },
+});
 
 function TeacherAddModule() {
     const location = useLocation();
@@ -11,8 +20,8 @@ function TeacherAddModule() {
     const [description, setDescription] = useState('');
     const [pdfFile, setPdfFile] = useState(null);
     const [moduleVideoFile, setModuleVideoFile] = useState(null)
-    const [showToast,setShowToast] = useState(false)
-    const [message,setMessage] = useState("")
+    const [showToast, setShowToast] = useState(false)
+    const [message, setMessage] = useState("")
     const [loading, setLoading] = useState(false);
 
     const handleFileChange = (e) => {
@@ -30,25 +39,23 @@ function TeacherAddModule() {
         formData.append('title', title);
         formData.append('description', description);
         formData.append('courseId', courseId);
-        formData.append('pdf', pdfFile); 
+        formData.append('pdf', pdfFile);
         formData.append("video", moduleVideoFile)
 
         try {
             setLoading(true);
-            const response = await fetch('http://localhost:8000/course/teacher-add-module', {
-                method: 'POST',
+            const response = await apiClient.post(`/course/teacher-add-module`,formData, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: formData,     
             });
 
-            const data = await response.json();
-            if (response.ok) {
+            const data = response.data;
+            if (response.status === 200) {
                 setMessage(data.message)
                 setShowToast(!showToast)
                 setTimeout(() => {
-                    navigate(`/teacher-view-course`, { state: { id: courseId } }); 
+                    navigate(`/teacher-view-course`, { state: { id: courseId } });
                 }, 2000);
             } else {
                 alert(data.message || "Failed to add module");

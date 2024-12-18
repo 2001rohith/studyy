@@ -3,7 +3,7 @@ const router = express.Router()
 const passport = require("passport")
 const jwt = require("jsonwebtoken")
 const authMiddleware = require("../middlewares/auth")
-const {signUp, verifyOtp, resendOtp ,selectRole,Login,getUsers,UpdateUser, DeleteUser,blockUser, getTeachers, verifyTeacher, forgotPassword, resetPassword, UserChangePassword, editProfile} = require("../controllers/userController")
+const {signUp, verifyOtp, resendOtp ,selectRole,Login,getUsers,UpdateUser, DeleteUser,blockUser, getTeachers, verifyTeacher, forgotPassword, resetPassword, UserChangePassword, editProfile, getProfieData} = require("../controllers/userController")
 const {getStudents} = require("../controllers/courseController")
 const isAdmin = require("../middlewares/isAdmin")
 const {upload} = require("../middlewares/uploadMiddleware")
@@ -43,5 +43,6 @@ router.post('/reset-password/:token', resetPassword);
 router.get("/get-students", getStudents)
 router.post('/change-password/:id', UserChangePassword);
 router.put("/edit-profile/:id",editProfile )
+router.get("/get-profile-data/:id",getProfieData)
 
 module.exports = router

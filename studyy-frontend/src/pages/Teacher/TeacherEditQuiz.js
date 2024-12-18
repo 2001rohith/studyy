@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Accept': 'application/json',
+    },
+});
 
 const TeacherEditQuiz = () => {
     const location = useLocation();
@@ -15,14 +24,15 @@ const TeacherEditQuiz = () => {
     useEffect(() => {
         const fetchQuizDetails = async () => {
             try {
-                const response = await fetch(`http://localhost:8000/course/get-quiz/${quizId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                const data = await response.json();
 
-                if (response.ok) {
+                const response = await apiClient.get(`/course/get-quiz/${quizId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                });
+
+                const data = response.data;
+                if (response.status === 200) {
                     setQuizTitle(data.quiz.title);
                     console.log("quiz title:", quizTitle)
                     setQuestions(data.quiz.questions);
@@ -75,17 +85,15 @@ const TeacherEditQuiz = () => {
         const quizData = { title: trimmedTitle, questions };
 
         try {
-            const response = await fetch(`http://localhost:8000/course/teacher-edit-quiz/${quizId}`, {
-                method: 'PUT',
+            
+            const response = await apiClient.put(`/course/teacher-edit-quiz/${quizId}`,quizData, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify(quizData)
             });
 
-            const data = await response.json();
-            if (response.ok) {
+            const data = response.data;
+            if (response.status === 200) {
                 setMessage("Quiz updated successfully!");
             } else {
                 setMessage(data.message || "Error occurred while updating the quiz.");

@@ -1,33 +1,41 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import axios from 'axios';
+import API_URL from '../../axiourl'; 
+
+const apiClient = axios.create({
+    baseURL: API_URL, 
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function ResetPassword() {
     const { token } = useParams();
-    const [message, setMessage] = useState("")
+    const [message, setMessage] = useState("");
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState("")
+    const [confirmPassword, setConfirmPassword] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch(`http://localhost:8000/user/reset-password/${token}`, {
-                method: "POST",
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ password, confirmPassword }),
+            const response = await apiClient.post(`/user/reset-password/${token}`, {
+                password,
+                confirmPassword,
             });
 
-            const data = await response.json();
+            const data = response.data;
             if (data.status === "ok") {
-                setMessage(data.message)
+                setMessage(data.message);
                 alert(data.message);
             } else {
-                setMessage(data.message)
+                setMessage(data.message);
                 alert(data.message);
             }
         } catch (error) {
             console.error("Error resetting password:", error);
+            setMessage("Error resetting password, please try again.");
         }
     };
 
@@ -40,10 +48,24 @@ function ResetPassword() {
                     <div className='input'>
                         <h6 className='warning-text text-center'>{message}</h6>
 
-                        <form>
-                            <input className='form-control text-start text-dark' type="password" onChange={(e) => setPassword(e.target.value)} name='password' placeholder='Enter new password' />
-                            <input className='form-control text-start text-dark' type="password" onChange={(e) => setConfirmPassword(e.target.value)} name='confirmPassword' placeholder='Confirm password' />
-                            <button className='btn btn-primary sign-in-button my-1' onClick={handleSubmit} >Reset</button>
+                        <form onSubmit={handleSubmit}>
+                            <input
+                                className='form-control text-start text-dark'
+                                type="password"
+                                onChange={(e) => setPassword(e.target.value)}
+                                name='password'
+                                placeholder='Enter new password'
+                                required
+                            />
+                            <input
+                                className='form-control text-start text-dark'
+                                type="password"
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                name='confirmPassword'
+                                placeholder='Confirm password'
+                                required
+                            />
+                            <button className='btn btn-primary sign-in-button my-1' type="submit">Reset</button>
                         </form>
                     </div>
                 </div>

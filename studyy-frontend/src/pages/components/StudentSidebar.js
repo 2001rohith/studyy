@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import io from "socket.io-client"
+import axios from 'axios';
+import API_URL from '../../axiourl';
 
-const socket = io("http://localhost:8000")
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
+
+
+const socket = io(`${API_URL}`)
 
 function StudentSidebar() {
     const navigate = useNavigate();
@@ -33,14 +44,14 @@ function StudentSidebar() {
     const fetchNotifications = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:8000/course/get-notifications/${user.id}`, {
-                method: 'GET',
+            const response = await apiClient.get(`/course/get-notifications/${user.id}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
             });
-            const data = await response.json();
-            if (response.ok) {
+
+            const data = response.data;
+            if (response.status === 200) {
                 setNotifications(data.notifications);
                 const unreadExists = data.notifications.some((notification) => !notification.isRead);
                 setHasUnread(unreadExists);
@@ -61,16 +72,14 @@ function StudentSidebar() {
                 .map((notification) => notification._id);
 
             if (unreadIds.length > 0) {
-                await fetch(`http://localhost:8000/course/mark-notifications-as-read`, {
-                    method: 'POST',
+                
+                const response = await apiClient.post(`/course/mark-notifications-as-read`, {
+                    notificationIds: unreadIds,
+                    studentId: user.id
+                }, {
                     headers: {
-                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     },
-                    body: JSON.stringify({
-                        notificationIds: unreadIds,
-                        studentId: user.id
-                    }),
                 });
 
                 setNotifications((prev) =>
@@ -92,7 +101,7 @@ function StudentSidebar() {
         setNotificationModal(true);
         setHasUnread(false)
     };
-    const closeModal = ()=>{
+    const closeModal = () => {
         setNotificationModal(false)
         markNotificationsAsRead()
     }
@@ -164,7 +173,7 @@ function StudentSidebar() {
                                     <p>Loading notifications...</p>
                                 ) : notifications.length > 0 ? (
                                     notifications.map((notification) => (
-                                        
+
                                         <div
                                             key={notification._id}
                                             className="card mb-3 shadow-sm "

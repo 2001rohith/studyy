@@ -1,14 +1,23 @@
 import { useState } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Accept': 'application/json',
+    },
+});
 
 const TeacherAddQuiz = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const cId = location.state?.id;
-    console.log("cId from create quiz:",cId)
+    console.log("cId from create quiz:", cId)
     const [courseId, setCourseId] = useState(cId);
-    console.log("courseid from create quiz:",courseId)
+    console.log("courseid from create quiz:", courseId)
     const [quizTitle, setQuizTitle] = useState('');
     // const [questions, setQuestions] = useState([{ question: '', option1: '', option2: '', answer: '' }]);
     const [questions, setQuestions] = useState([{ question: '', options: ['', ''], answer: '' }])
@@ -16,11 +25,6 @@ const TeacherAddQuiz = () => {
 
     const handleQuizTitleChange = (e) => setQuizTitle(e.target.value);
 
-    // const handleQuestionChange = (index, field, value) => {
-    //     const updatedQuestions = [...questions];
-    //     updatedQuestions[index][field] = value;
-    //     setQuestions(updatedQuestions);
-    // };
     const handleQuestionChange = (index, field, value) => {
         const updatedQuestions = [...questions];
         if (field === 'option1' || field === 'option2') {
@@ -32,9 +36,6 @@ const TeacherAddQuiz = () => {
         setQuestions(updatedQuestions);
     };
 
-    // const handleAddQuestion = () => {
-    //     setQuestions([...questions, { question: '', option1: '', option2: '', answer: '' }]);
-    // };
     const handleAddQuestion = () => {
         setQuestions([...questions, { question: '', options: ['', ''], answer: '' }]);
     };
@@ -56,17 +57,15 @@ const TeacherAddQuiz = () => {
         const quizData = { title: trimmedTitle, courseId, questions };
 
         try {
-            const response = await fetch("http://localhost:8000/course/add-quiz", {
-                method: 'POST',
+            
+            const response = await apiClient.post(`/course/add-quiz`, quizData, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify(quizData)
             });
 
-            const data = await response.json();
-            if (response.ok) {
+            const data = response.data;
+            if (response.status === 200) {
                 setMessage(data.message);
             } else {
                 setMessage(data.message || "Error occurred while creating the quiz.");

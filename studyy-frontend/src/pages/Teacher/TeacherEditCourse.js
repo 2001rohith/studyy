@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar'
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 
 const TeacherEditCourse = () => {
@@ -20,13 +30,14 @@ const TeacherEditCourse = () => {
         const getModule = async () => {
             console.log("course id again", courseId)
             try {
-                const response = await fetch(`http://localhost:8000/course/get-course/${courseId}`, {
-                    method: "GET",
+
+                const response = await apiClient.get(`/course/get-course/${courseId}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                })
-                let data = await response.json()
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                });
+
+                const data = response.data;
                 console.log("data from teacher home", data)
                 setModules(data.modules || [])
                 console.log("modules extracted:", modules)
@@ -52,15 +63,14 @@ const TeacherEditCourse = () => {
             return
         }
         try {
-            const response = await fetch(`http://localhost:8000/course/teacher-edit-course/${courseId}`, {
-                method: 'PUT',
+
+            const response = await apiClient.put(`/course/teacher-edit-course/${courseId}`, { title: trimmedTitle, description: trimmedDescription }, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify({ title: trimmedTitle, description: trimmedDescription })
             });
-            const data = await response.json();
+
+            const data = response.data;
             setMessage(data.message);
             console.log(data.message)
             if (response.ok) {
@@ -90,14 +100,15 @@ const TeacherEditCourse = () => {
     const handleDelete = async () => {
         // if (!window.confirm('Are you sure you want to delete this module?')) return;
         try {
-            const response = await fetch(`http://localhost:8000/course/teacher-delete-module/${moduleId}`, {
-                method: "DELETE",
+            
+            const response = await apiClient.delete(`/course/teacher-delete-module/${moduleId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            })
-            const data = await response.json()
-            if (response.ok) {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
+
+            const data = response.data;
+            if (response.status === 200) {
                 setModules(modules.filter(mod => mod._id !== moduleId))
                 setDeleteModal(!deleteModal)
                 setModuleId("")

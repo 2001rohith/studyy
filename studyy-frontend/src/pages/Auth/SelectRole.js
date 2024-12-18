@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
+import API_URL from '../../axiourl'; 
+
+const apiClient = axios.create({
+    baseURL: API_URL,  
+    headers: {
+        'Accept': 'application/json',
+    },
+});
 
 const SelectRole = () => {
   const [selectedRole, setSelectedRole] = useState('');
-  const [email, setEmail] = useState(localStorage.getItem('email') || '')
-  const [token, setToken] = useState(localStorage.getItem('token') || '')
-  const [certificate, setCertificate] = useState(null)
-  const [message, setMessage] = useState('')
+  const [email, setEmail] = useState(localStorage.getItem('email') || '');
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [certificate, setCertificate] = useState(null);
+  const [message, setMessage] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -18,62 +27,52 @@ const SelectRole = () => {
 
     if (currentToken) {
       setToken(currentToken);
-      localStorage.setItem('token', currentToken)
+      localStorage.setItem('token', currentToken);
     }
 
     if (currentEmail) {
       setEmail(currentEmail);
-      localStorage.setItem('email', currentEmail)
+      localStorage.setItem('email', currentEmail);
     }
   }, [urlToken, location.state?.token, location.state?.email]);
 
-  console.log("email from select role:", email);
-  console.log("token from select role:", token);
-
   const handleRoleSelection = async () => {
     try {
-
-      if (selectedRole === "teacher") {
-        if (!certificate) {
-          setMessage("Upload a cerificate as pdf!")
-          return
-        }
+      if (selectedRole === 'teacher' && !certificate) {
+        setMessage('Upload a certificate as pdf!');
+        return;
       }
 
       if (selectedRole && token) {
-        const formData = new FormData()
-        formData.append("role", selectedRole)
-        formData.append("certificate", certificate)
-        const response = await fetch('http://localhost:8000/user/select-role', {
-          method: 'POST',
+        const formData = new FormData();
+        formData.append('role', selectedRole);
+        if (certificate) formData.append('certificate', certificate);
+
+        const response = await apiClient.post('/user/select-role', formData, {
           headers: {
-            "Authorization": `Bearer ${token}`,
+            'Authorization': `Bearer ${token}`,
           },
-          body: formData,
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("status:", data.status);
-        console.log("role of user from response:", data.role);
-
-        if (data.status === "ok") {
-          const userData = { email, role: data.role };
+        if (response.data.status === 'ok') {
+          const data = response.data;
           localStorage.setItem('user', JSON.stringify(data.user));
-          if (data.role === "teacher") {
-            navigate("/teacher-home", { state: { user: userData } });
-          } else if (data.role === "student") {
-            navigate("/student-home", { state: { user: userData } });
+
+          const userData = { email, role: data.role };
+          if (data.role === 'teacher') {
+            navigate('/teacher-home', { state: { user: userData } });
+          } else if (data.role === 'student') {
+            navigate('/student-home', { state: { user: userData } });
           }
+        } else {
+          setMessage(response.data.message || 'Something went wrong.');
         }
       } else {
         console.error('Role or token is missing');
       }
     } catch (error) {
-      console.error("Error during role selection:", error);
+      console.error('Error during role selection:', error);
+      setMessage('Error during role selection, please try again.');
     }
   };
 
@@ -81,11 +80,13 @@ const SelectRole = () => {
     <div className="wrapper">
       <div className="container login-boxx">
         <div className="login-items">
-          <div className='select-role'>
-            <h4 className='select-role-heading'>Who are you?</h4>
-            {message && <div class="alert alert-danger" role="alert">
-              {message}
-            </div>}
+          <div className="select-role">
+            <h4 className="select-role-heading">Who are you?</h4>
+            {message && (
+              <div className="alert alert-danger" role="alert">
+                {message}
+              </div>
+            )}
             <div className="dropdown">
               <button
                 className="btn btn-secondary dropdown-toggle"
@@ -94,7 +95,7 @@ const SelectRole = () => {
                 data-bs-toggle="dropdown"
                 aria-expanded="false"
               >
-                {selectedRole ? selectedRole : "Select Role"}
+                {selectedRole ? selectedRole : 'Select Role'}
               </button>
               <ul className="dropdown-menu" aria-labelledby="dropdownMenuButton">
                 <li>

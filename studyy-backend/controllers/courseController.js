@@ -11,7 +11,7 @@ const sendEmail = require("../helpers/sendEmail")
 exports.getStudents = async (req, res) => {
     try {
         let users = await User.find({ role: "student" })
-        res.json({ status: "ok", users, message: "student list for teacher" })
+        res.status(200).json({  users, message: "student list for teacher" })
     } catch (error) {
         console.error("get students error:", error.message);
         res.status(500).json({ message: "Server error" });
@@ -34,7 +34,7 @@ exports.getCourses = async (req, res) => {
             studentCount: course.studentsEnrolled.length || 0,
             assignmentCount: course.assignments.length || 0
         }));
-        res.json({ status: "ok", courses: coursesToSend, message: "Course list for teacher" });
+        res.status(200).json({  courses: coursesToSend, message: "Course list for teacher" });
     } catch (error) {
         console.error("Get courses error:", error.message);
         res.status(500).json({ message: "Server error" });
@@ -67,7 +67,7 @@ exports.createCourse = async (req, res) => {
             teacher: userId,
         });
         await newCourse.save();
-        res.status(201).json({ status: "ok", message: 'Course created successfully', course: newCourse });
+        res.status(200).json({ message: 'Course created successfully', course: newCourse });
     } catch (error) {
         console.error(error.message);
         res.status(500).json({ message: 'Server error' });
@@ -98,7 +98,7 @@ exports.getCourse = async (req, res) => {
         console.log("teacher from get course:", teacher)
         if (!course) return res.status(404).json({ message: "no course found" })
         console.log(course)
-        res.status(200).json({ status: "ok", course, modules, teacher, message: "fetched course succesfully" })
+        res.status(200).json({ course, modules, teacher, message: "fetched course succesfully" })
     } catch (error) {
         console.error("get course error:", error.message);
         res.status(500).json({ message: "Server error" });
@@ -111,7 +111,7 @@ exports.EditCourse = async (req, res) => {
     try {
         let updatedCourse = await Course.findByIdAndUpdate(courseId, { title, description }, { new: true })
         if (!updatedCourse) res.status(404).json({ status: "notok", message: "course not found" })
-        res.status(200).json({ status: "ok", user: updatedCourse, message: "course updated successfully" });
+        res.status(200).json({  user: updatedCourse, message: "course updated successfully" });
     } catch (error) {
         console.error("Update course error:", error.message);
         res.status(500).json({ message: "Server error" });
@@ -137,7 +137,7 @@ exports.createModule = async (req, res) => {
             videoPath
         })
         await newModule.save()
-        res.status(201).json({ message: "Module created successfully", module: newModule })
+        res.status(200).json({ message: "Module created successfully", module: newModule })
     } catch (error) {
         console.error("Error creating module:", error);
         res.status(500).json({ message: "Server error" });
@@ -171,7 +171,7 @@ exports.EditModule = async (req, res) => {
     try {
         let updatedModule = await Module.findByIdAndUpdate(moduleId, updateFields, { new: true })
         if (!updatedModule) res.status(404).json({ status: "notok", message: "module not found" })
-        res.status(200).json({ status: "ok", module: updatedModule, message: "module updated successfully" });
+        res.status(200).json({ module: updatedModule, message: "module updated successfully" });
     } catch (error) {
         console.error("Update module error:", error.message);
         res.status(500).json({ message: "Server error" });
@@ -193,7 +193,7 @@ exports.AdmingetCourses = async (req, res) => {
                 }
             })
         )
-        res.status(200).json({ status: 'ok', courses: courseToSend, message: "Courses for admin" })
+        res.status(200).json({ courses: courseToSend, message: "Courses for admin" })
     } catch (error) {
         console.error("Admin get courses error:", error.message);
         res.status(500).json({ message: "Server error" });
@@ -213,7 +213,7 @@ exports.AdmingetCourse = async (req, res) => {
         }
         if (!course) return res.status(404).json({ message: "no course found" })
         console.log(course)
-        res.status(200).json({ status: "ok", course: courseToSend, modules, message: "fetched course succesfully" })
+        res.status(200).json({  course: courseToSend, modules, message: "fetched course succesfully" })
     } catch (error) {
         console.error("delete course error:", error.message);
         res.status(500).json({ message: "Server error" });
@@ -232,7 +232,7 @@ exports.GetAssignments = async (req, res) => {
         const course = await Course.findById({ _id: courseId })
         // console.log("course:" ,course)
         if (assignments.length === 0) {
-            return res.status(404).json({ message: 'No assignments found for this course.' });
+            return res.status(203).json({ message: 'No assignments found for this course.',course: course.title });
         }
 
         const assignmentWithCourse = assignments.map(assignment => ({
@@ -243,7 +243,7 @@ exports.GetAssignments = async (req, res) => {
             course: assignment.course ? assignment.course.title : "unknown assignment",
             submissions: assignment.submissions
         }))
-        res.status(200).json({ status: 'ok', assignments: assignmentWithCourse, course: course.title });
+        res.status(200).json({  assignments: assignmentWithCourse, course: course.title });
     } catch (error) {
         console.error("get assignments error:", error.message);
         res.status(500).json({ message: "Server error" });
@@ -268,7 +268,7 @@ exports.CreateAssignment = async (req, res) => {
             course.assignments.push(newAssignment._id)
             await course.save()
         }
-        res.status(201).json({
+        res.status(200).json({
             message: "Assignment created successfully.",
             assignment: newAssignment
         });
@@ -537,17 +537,17 @@ exports.studentsubmitAssignment = async (req, res) => {
     try {
         const assignment = await Assignment.findById(assignmentId);
         if (!assignment) {
-            return res.status(404).json({ message: 'Assignment not found' });
+            return res.status(203).json({ message: 'Assignment not found' });
         }
         const currentDate = new Date();
         const dueDate = new Date(assignment.dueDate);
 
         if (currentDate > dueDate) {
-            return res.status(400).json({ message: 'The assignment due date has passed. You cannot submit the assignment.' });
+            return res.status(203).json({ message: 'The assignment due date has passed. You cannot submit the assignment.' });
         }
 
         if (!req.file) {
-            return res.status(400).json({ message: 'File is required for submission' });
+            return res.status(203).json({ message: 'File is required for submission' });
         }
 
         assignment.submissions.push({
@@ -649,8 +649,7 @@ exports.getClasses = async (req, res) => {
     const courseId = req.params.id
     try {
         const classes = await Class.find({ course: courseId });
-        // console.log("classes from get classes:", classes)
-        if (classes.length === 0) return res.json({ message: "No classes found" })
+        if (classes.length === 0) return res.status(400).json({ message: "No classes found" })
         res.status(200).json({ status: 'ok', classes });
     } catch (error) {
         console.log(error);

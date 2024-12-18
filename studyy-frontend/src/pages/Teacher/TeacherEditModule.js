@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar'
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Accept': 'application/json',
+    },
+});
 
 
 const TeacherEditModule = () => {
@@ -19,7 +28,7 @@ const TeacherEditModule = () => {
     const handleFileChange = (e) => {
         setPdfFile(e.target.files[0]);
     };
-    const handleVideoFileChange = (e)=>{
+    const handleVideoFileChange = (e) => {
         setVideFile(e.target.files[0])
     }
 
@@ -34,22 +43,21 @@ const TeacherEditModule = () => {
         formData.append('title', title);
         formData.append('description', description);
         formData.append('pdf', pdfFile);
-        formData.append("video",videoFile)
+        formData.append("video", videoFile)
 
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:8000/course/teacher-edit-module/${moduleId}`, {
-                method: 'PUT',
+            
+            const response = await apiClient.put(`/course/teacher-edit-module/${moduleId}`, formData, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: formData, 
             });
 
-            const data = await response.json();
-            if (response.ok) {
+            const data = response.data;
+            if (response.status === 200) {
                 alert("Module added successfully");
-                navigate("/teacher-edit-course",{state:{course}})
+                navigate("/teacher-edit-course", { state: { course } })
             } else {
                 alert(data.message || "Failed to add module");
             }

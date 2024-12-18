@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import Sidebar2 from '../components/Sidebar2'
+import axios from 'axios';
+import API_URL from '../../axiourl';
 
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function AdminViewCourse() {
     const navigate = useNavigate()
@@ -19,13 +28,13 @@ function AdminViewCourse() {
             console.log("course id again", courseId)
 
             try {
-                const response = await fetch(`http://localhost:8000/course/admin-get-course/${courseId}`, {
-                    method: "GET",
+                const response = await apiClient.get(`/course/admin-get-course/${courseId}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                })
-                let data = await response.json()
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                });
+
+                const data = response.data;
                 console.log("data from teacher home", data)
                 setCourse(data.course)
                 setModules(data.modules || [])
@@ -42,13 +51,13 @@ function AdminViewCourse() {
     const deleteModule = async (id) => {
         if (!window.confirm('Are you sure you want to delete this module?')) return;
         try {
-            const response = await fetch(`http://localhost:8000/course/teacher-delete-module/${id}`, {
-                method: "DELETE",
+            const response = await apiClient.delete(`/course/teacher-delete-module/${id}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            })
-            if (response.ok) {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
+
+            if (response.status === 200) {
                 alert("Module deleted successfully");
                 setModules(modules.filter(mod => mod._id !== id))
             } else {
@@ -60,7 +69,7 @@ function AdminViewCourse() {
     }
 
     const handleViewPDF = (mod) => {
-        const backendOrigin = "http://localhost:8000";
+        const backendOrigin = `${API_URL}`;
         const formattedPath = `${backendOrigin}/${mod.pdfPath.replace(/\\/g, '/')}`.replace(/^\/+/, "");
 
         setSelectedModule({ ...mod, pdfPath: formattedPath });
@@ -68,7 +77,7 @@ function AdminViewCourse() {
         setShowModal(true);
     };
     const handleViewVideo = (mod) => {
-        const backendOrigin = "http://localhost:8000";
+        const backendOrigin = `${API_URL}`;
         const videoPath = `${backendOrigin}/${mod.videoPath.replace(/\\/g, '/')}`.replace(/^\/+/, "");
 
         setSelectedModule({ ...mod, videoPath: videoPath });
@@ -117,7 +126,7 @@ function AdminViewCourse() {
                         <h5>Modules</h5>
                         <div className='row '>
                             {Array.isArray(modules) && modules.map((mod, index) => (
-                                <div className='col-md-4 mb-4' key={mod._id}> 
+                                <div className='col-md-4 mb-4' key={mod._id}>
                                     <div className='card text-dark bg-light'>
                                         <img src="/course-card1.jpg" className="card-img-top" alt="module image" style={{ height: '200px', objectFit: 'cover' }} />
                                         <div className='card-body'>

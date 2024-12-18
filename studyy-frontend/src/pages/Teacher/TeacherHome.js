@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 // import { useNavigate, useLocation } from 'react-router-dom'
 import TeacherSidebar from '../components/TeacherSidebar'
 import Footer2 from '../components/Footer2'
+
 function TeacherHome() {
   // const navigate = useNavigate()
   // const location = useLocation()

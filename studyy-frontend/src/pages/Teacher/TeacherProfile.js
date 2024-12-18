@@ -1,17 +1,30 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import TeacherSidebar from '../components/TeacherSidebar'
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function TeacherProfile() {
     const navigate = useNavigate()
     // const location = useLocation()
-    const user = JSON.parse(localStorage.getItem('user'));
-    console.log("user id from profile:", user.id)
+    const User = JSON.parse(localStorage.getItem('user'));
+    console.log("user from localstorage:", User)
+    const [userId, setUserId] = useState(User.id)
+    console.log("user id:", userId)
+    const [user, setUser] = useState()
     const [currentPassword, setCurrentPassword] = useState("")
     const [newPassword, setNewPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
-    const [name, setName] = useState(user.name)
-    const [email, setEmail] = useState(user.email)
+    const [name, setName] = useState("")
+    const [email, setEmail] = useState("")
     const [message, setMessage] = useState('')
     const [showPasswordModal, setShowPasswordModal] = useState(false)
     const [showEditModal, setShowEditModal] = useState(false)
@@ -19,19 +32,38 @@ function TeacherProfile() {
     const [error, setError] = useState(null)
 
 
+    const getProfileData = async () => {
+        try {
+            const response = await apiClient.get(`/user/get-profile-data/${userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+            })
+            const data = response.data;
+            if (response.status === 200) {
+                setUser(data.user)
+
+            }
+        } catch (error) {
+            console.log("error in fetching profile data", error)
+            setError('Server error, please try again later')
+        }
+    }
+    useEffect(() => {
+        getProfileData();
+    }, []);
+
     const getCourses = async () => {
         try {
-            const response = await fetch("http://localhost:8000/course/get-courses", {
-                method: "GET",
+
+            const response = await apiClient.get(`/course/get-courses`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            })
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
 
-            let data = await response.json()
-            console.log("data from teacher home", data)
-
-            if (data.status === "ok") {
+            const data = response.data;
+            if (response.status === 200) {
                 setCourses(data.courses)
             } else {
                 setError('No courses or failed to fetch!')
@@ -54,20 +86,19 @@ function TeacherProfile() {
             return
         }
         try {
-            const response = await fetch(`http://localhost:8000/user/change-password/${user.id}`, {
-                method: "POST",
+
+            const response = await apiClient.post(`/user/change-password/${user._id}`, {
+                currentPassword,
+                newPassword,
+            }, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify({
-                    currentPassword,
-                    newPassword,
-                })
-            })
-            const data = await response.json()
+            });
+
+            const data = response.data;
             setMessage(data.message)
-            if (response.ok) {
+            if (response.status === 200) {
                 setCurrentPassword("")
                 setNewPassword("")
                 setConfirmPassword("")
@@ -109,26 +140,23 @@ function TeacherProfile() {
                 setMessage("This is not a email")
                 return
             }
-            const response = await fetch(`http://localhost:8000/user/edit-profile/${user.id}`, {
-                method: "PUT",
+
+            const response = await apiClient.put(`/user/edit-profile/${user._id}`, { name, email }, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify({
-                    name,
-                    email,
-                })
-            })
-            const data = await response.json()
+            });
+
+            const data = response.data;
             setMessage(data.message)
-            if (response.ok) {
+            if (response.status === 200) {
                 localStorage.setItem('user', JSON.stringify(data.user));
+                getProfileData()
                 setName("")
                 setEmail("")
                 setTimeout(() => {
                     closeEditModal()
-                }, 2000)
+                }, 1000)
             } else {
                 setMessage(data.message || 'Password change failed.');
             }
@@ -138,8 +166,11 @@ function TeacherProfile() {
     }
 
     const setModal = () => setShowPasswordModal(!showPasswordModal)
-    const setEditModal = () => setShowEditModal(!showEditModal)
-
+    const setEditModal = () => {
+        setName(user.name)
+        setEmail(user.email)
+        setShowEditModal(!showEditModal)
+    }
     const closeModal = () => {
         setShowPasswordModal(!showPasswordModal)
         setCurrentPassword('');

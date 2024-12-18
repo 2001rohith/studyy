@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import StudentSidebar from '../components/StudentSidebar'
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
+
 
 function StudentCheckCourse() {
     const navigate = useNavigate()
@@ -21,13 +32,14 @@ function StudentCheckCourse() {
             console.log("course id again", courseId)
 
             try {
-                const response = await fetch(`http://localhost:8000/course/get-course/${courseId}`, {
-                    method: "GET",
+
+                const response = await apiClient.get(`/course/get-course/${courseId}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                })
-                let data = await response.json()
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                });
+
+                const data = response.data;
                 console.log("data from check course", data)
                 setCourse(data.course)
                 setModules(data.modules || [])
@@ -47,16 +59,15 @@ function StudentCheckCourse() {
 
     const enrollCourse = async () => {
         try {
-            const response = await fetch("http://localhost:8000/course/student-enroll", {
-                method: "POST",
+            
+            const response = await apiClient.post(`/course/student-enroll`, { studentId: user.id, courseId }, {
                 headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify({ studentId: user.id, courseId })
-            })
-            let data = await response.json()
-            if (response.ok) {
+            });
+
+            const data = response.data;
+            if (response.status === 200) {
                 console.log("data from check course", data)
                 setConfirmModal(false)
                 setShowModal(true)

@@ -4,8 +4,18 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import TeacherSidebar from '../components/TeacherSidebar';
 import '../css/TeacherLiveClass.css';
 import io from 'socket.io-client';
+import axios from 'axios';
+import API_URL from '../../axiourl';
 
-const socket = io('http://localhost:8000');
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
+
+const socket = io(`${API_URL}`);
 
 function TeacherLiveClass() {
     const [peerId, setPeerId] = useState('');
@@ -50,15 +60,14 @@ function TeacherLiveClass() {
 
     const sendPeerIdToBackend = async (Id) => {
         try {
-            const response = await fetch(`http://localhost:8000/course/add-peerid/${classId}`, {
-                method: 'PUT',
+
+            const response = await apiClient.put(`/course/add-peerid/${classId}`, { peerId: Id }, {
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify({ peerId: Id }),
             });
 
-            if (response.ok) {
+            if (response.status === 200) {
                 console.log('Peer ID saved successfully');
             } else {
                 console.error('Failed to save Peer ID');
@@ -177,21 +186,22 @@ function TeacherLiveClass() {
         }).catch(err => console.error("Error starting self video: ", err));
     };
 
-    const updateStatus = async()=>{
+    const updateStatus = async () => {
         try {
-            const response = await fetch(`http://localhost:8000/course/update-class-status/${classId}`,{
-                method:"PUT",
+            
+            const response = await apiClient.put(`/course/update-class-status/${classId}`, {
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
-            })
-            if (response.ok) {
+            });
+
+            if (response.status === 200) {
                 console.log('Class status updated');
             } else {
                 console.error('Failed to save Peer ID');
             }
         } catch (error) {
-            console.error('Failed to update class status',error);
+            console.error('Failed to update class status', error);
         }
     }
 
@@ -218,7 +228,7 @@ function TeacherLiveClass() {
             if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {
                 const remoteStream = remoteVideoRef.current.srcObject;
                 remoteStream.getTracks().forEach((track) => {
-                    track.stop(); 
+                    track.stop();
                 });
             }
 
@@ -228,10 +238,10 @@ function TeacherLiveClass() {
             }
 
             if (currentUserVideoRef.current) {
-                currentUserVideoRef.current.srcObject = null; 
+                currentUserVideoRef.current.srcObject = null;
             }
             if (remoteVideoRef.current) {
-                remoteVideoRef.current.srcObject = null; 
+                remoteVideoRef.current.srcObject = null;
             }
 
             socket.emit('end-live-class', { classId });

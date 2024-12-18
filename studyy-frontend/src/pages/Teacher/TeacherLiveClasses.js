@@ -2,8 +2,19 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import TeacherSidebar from '../components/TeacherSidebar'
 import io from 'socket.io-client'
+import axios from 'axios';
+import API_URL from '../../axiourl';
 
-const socket = io("http://localhost:8000");
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
+
+const socket = io(`${API_URL}`);
+
 function TeacherLiveClasses() {
     const navigate = useNavigate()
     const location = useLocation()
@@ -20,17 +31,17 @@ function TeacherLiveClasses() {
 
     const fetchClasses = async () => {
         try {
-            const response = await fetch(`http://localhost:8000/course/teacher-get-classes/${courseId}`, {
-                method: 'GET',
+
+            const response = await apiClient.get(`/course/teacher-get-classes/${courseId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
             });
 
-            const data = await response.json();
+            const data = response.data;
             setMessage(data.message)
             console.log("message:", message)
-            if (data.status === 'ok') {
+            if (response.status === 200) {
                 setClasses(data.classes);
             } else {
                 setError('No live classes found or failed to fetch!');
@@ -44,19 +55,19 @@ function TeacherLiveClasses() {
 
     const handleDelete = async () => {
         try {
-            const response = await fetch(`http://localhost:8000/course/teacher-delete-class/${selectedClass._id}`, {
-                method: 'DELETE',
+            
+            const response = await apiClient.delete(`/course/teacher-delete-class/${selectedClass._id}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
             });
 
-            const data = await response.json();
+            const data = response.data;
             setMessage(data.message)
             setShowModal(false)
             setShowToast(true)
             console.log("message:", message)
-            if (data.status === 'ok') {
+            if (response.status === 200) {
                 setClasses(classes.filter(cls => cls._id !== selectedClass._id));
 
             } else {
@@ -112,7 +123,7 @@ function TeacherLiveClasses() {
                                 <span className="visually-hidden">Loading...</span>
                             </div>
                         ) : classes.length === 0 ? (
-                            <p>No classes available</p>
+                            <p className='text-dark'>No classes available</p>
                         ) : (
                             <table className="table table-default table-hover table-responsive table-striped-columns table-borderless mt-2 ms-4">
                                 <thead>

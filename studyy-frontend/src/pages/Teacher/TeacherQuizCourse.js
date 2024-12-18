@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TeacherSidebar from '../components/TeacherSidebar'
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+})
 
 function TeacherQuizCourses() {
     const navigate = useNavigate()
@@ -13,16 +23,15 @@ function TeacherQuizCourses() {
 
     const getCourses = async () => {
         try {
-            const response = await fetch("http://localhost:8000/course/get-courses", {
-                method: "GET",
+            
+            const response = await apiClient.get(`/course/get-courses`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            })
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
 
-            let data = await response.json()
-
-            if (data.status === "ok") {
+            const data = response.data;
+            if (response.status === 200) {
                 setCourses(data.courses)
             } else {
                 setError('No courses or failed to fetch!')

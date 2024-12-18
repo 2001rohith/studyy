@@ -1,80 +1,72 @@
-import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import API_URL from '../../axiourl'; 
+
+const apiClient = axios.create({
+    baseURL: API_URL, 
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function Login() {
-
-    const [email, setEmail] = useState('')
-    const [password, SetPassword] = useState('')
-    const [message, setMessage] = useState('')
-    const navigate = useNavigate()
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [message, setMessage] = useState('');
+    const navigate = useNavigate();
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user'));
         if (user) {
-            if (user.role === "admin") navigate("/admin-home", { replace: true });
-            else if (user.role === "teacher") navigate("/teacher-home", { replace: true });
-            else navigate("/student-home", { replace: true });
+            if (user.role === 'admin') navigate('/admin-home', { replace: true });
+            else if (user.role === 'teacher') navigate('/teacher-home', { replace: true });
+            else navigate('/student-home', { replace: true });
         }
     }, [navigate]);
 
     const handlesubmit = async (e) => {
-        e.preventDefault()
+        e.preventDefault();
         try {
             if (!email && !password) {
-                setMessage("Enter the details")
-                return
+                setMessage('Enter the details');
+                return;
             }
             if (email.length < 2) {
-                setMessage("Too short for email")
-                return
+                setMessage('Too short for email');
+                return;
             }
             if (password.length < 6) {
-                setMessage("Too short for password")
-                return
+                setMessage('Too short for password');
+                return;
             }
 
-            const response = await fetch("http://localhost:8000/user/login", {
-                method: 'POST',
-                crossDomain: true,
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                },
-                body: JSON.stringify({
-                    email,
-                    password,
-                }),
-            });
-            const data = await response.json();
-            setMessage(data.message)
-            if (data.status === "ok") {
-                window.localStorage.setItem("token", data.token)
+            const response = await apiClient.post('/user/login', { email, password });
+            const data = response.data;
+            setMessage(data.message);
+
+            if (response.status === 200) {
+                localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
-                console.log("role from login:", data.user.role)
-                if (data.user.role === "admin") {
-                    navigate("/admin-home", { state: { user: data.user }, replace: true })
-                } else if (data.user.role === "teacher") {
-                    navigate("/teacher-home", { state: { user: data.user }, replace: true })
-                }
-                // else if (data.user.role === "teacher" && data.user.isTeacherVerified === true) {
-                //     navigate("/teacher-pending", { state: { user: data.user }, replace: true })
-                // }
-                else {
-                    navigate("/student-home", { state: { user: data.user }, replace: true })
+                console.log('role from login:', data.user.role);
+                if (data.user.role === 'admin') {
+                    navigate('/admin-home', { state: { user: data.user }, replace: true });
+                } else if (data.user.role === 'teacher') {
+                    navigate('/teacher-home', { state: { user: data.user }, replace: true });
+                } else {
+                    navigate('/student-home', { state: { user: data.user }, replace: true });
                 }
             }
-
-            console.log("login-response", data);
         } catch (error) {
-            console.error("Error during login:", error);
+            console.error('Error during login:', error);
+            setMessage(error.response?.data?.message || 'Something went wrong');
         }
-    }
-
-    const googleLogin = () => {
-        window.location.href = 'http://localhost:8000/user/auth/google'
     };
 
+    const googleLogin = () => {
+        window.location.href = `${API_URL}/user/auth/google`; // Use the directly specified API URL for Google login
+    };
 
     return (
         <>
@@ -84,23 +76,42 @@ function Login() {
                         <h2 className="login-title">studyy</h2>
                         <h5 className='heading'>Welcome Back!</h5>
                         <div className='input'>
-                            {/* <h6 className='warning-text text-center'>{message}</h6> */}
-                            {message && <div class="alert alert-danger" role="alert">
-                                {message}
-                            </div>}
+                            {message && (
+                                <div className="alert alert-danger" role="alert">
+                                    {message}
+                                </div>
+                            )}
                             <form>
-                                <input className='form-control text-start text-dark input' type="email" onChange={(e) => setEmail(e.target.value)} name='email' placeholder='Enter Email' />
-                                {/* <label for="email">Email</label> */}
-                                <input className='form-control text-dark input' type="password" onChange={(e) => SetPassword(e.target.value)} name='password' placeholder='Enter Password' />
-                                {/* <label for="password">Password</label> */}
-                                <button className='btn btn-primary sign-in-button my-1' onClick={handlesubmit} >Sign In</button>
+                                <input
+                                    className='form-control text-start text-dark input'
+                                    type="email"
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    name='email'
+                                    placeholder='Enter Email'
+                                />
+                                <input
+                                    className='form-control text-dark input'
+                                    type="password"
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    name='password'
+                                    placeholder='Enter Password'
+                                />
+                                <button className='btn btn-primary sign-in-button my-1' onClick={handlesubmit}>
+                                    Sign In
+                                </button>
                             </form>
                             <div className='mt-3 text-center other-options'>
-                                <span className='sign-in-up-link'><Link to={"/forgot-password"} >Forgot password?</Link></span>
-                                <button className='btn text-light mb-2' onClick={googleLogin}><i className="fa-brands fa-google"></i> Google</button>
+                                <span className='sign-in-up-link'>
+                                    <Link to={"/forgot-password"}>Forgot password?</Link>
+                                </span>
+                                <button className='btn text-light mb-2' onClick={googleLogin}>
+                                    <i className="fa-brands fa-google"></i> Google
+                                </button>
                                 <div className='d-flex'>
-                                <span className='signup-link'>New User?</span>
-                                <span className='sign-in-up-link ms-1'><Link to={"/signup"}>Sign Up</Link></span>
+                                    <span className='signup-link'>New User?</span>
+                                    <span className='sign-in-up-link ms-1'>
+                                        <Link to={"/signup"}>Sign Up</Link>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -108,7 +119,7 @@ function Login() {
                 </div>
             </div>
         </>
-    )
+    );
 }
 
-export default Login
+export default Login;

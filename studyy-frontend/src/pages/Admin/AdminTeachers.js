@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar2 from '../components/Sidebar2';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function AdminTeachers() {
     const navigate = useNavigate();
@@ -20,18 +30,13 @@ function AdminTeachers() {
     useEffect(() => {
         const getTeachers = async () => {
             try {
-                const response = await fetch("http://localhost:8000/user/get-teachers", {
-                    method: "GET",
+                const response = await apiClient.get('/user/get-teachers', {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
                 });
 
-                if (!response.ok) {
-                    throw new Error('Failed to fetch teachers');
-                }
-
-                const data = await response.json();
+                const data = response.data;
                 setUsers(data.users);
                 setFilteredUsers(data.users);
                 setLoading(false);
@@ -46,8 +51,9 @@ function AdminTeachers() {
     }, []);
 
     const handleViewPDF = (user) => {
-        const backendOrigin = "http://localhost:8000";
+        const backendOrigin = `${API_URL}`;
         const formattedPath = `${backendOrigin}/${user.teacherCertificatePath.replace(/\\/g, '/')}`;
+        console.log(formattedPath)
         setSelectedUser({ ...user, teacherCertificatePath: formattedPath });
         setShowModal(true);
     };
@@ -86,15 +92,14 @@ function AdminTeachers() {
 
     const handleVerification = async (userId) => {
         try {
-            const response = await fetch(`http://localhost:8000/user/admin-verify-teacher/${userId}`, {
-                method: 'PUT',
+
+            const response = await apiClient.put(`/user/admin-verify-teacher/${userId}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
+                },
             });
 
-            if (response.ok) {
+            if (response.status === 200) {
                 navigate(0);
             } else {
                 alert('Failed to verify/unverify teacher');

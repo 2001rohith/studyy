@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import TeacherSidebar from '../components/TeacherSidebar';
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
 function TeacherAssignments() {
     const navigate = useNavigate();
@@ -23,18 +33,19 @@ function TeacherAssignments() {
 
     const getAssignments = async () => {
         try {
-            const response = await fetch(`http://localhost:8000/course/get-assignments/${courseId}`, {
-                method: 'GET',
+
+            const response = await apiClient.get(`/course/get-assignments/${courseId}`, {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
             });
 
-            const data = await response.json();
-            if (response.ok) {
+            const data = response.data;
+            if (response.status === 200) {
                 setAssignments(data.assignments);
                 setCourseName(data.course);
             } else {
+                setCourseName(data.course);
                 setError(data.message || 'Failed to fetch assignments');
             }
         } catch (error) {
@@ -62,16 +73,15 @@ function TeacherAssignments() {
     }
 
     const handleDelete = async (id) => {
-        // if (!window.confirm('Are you sure you want to delete this course?')) return;
         try {
-            const response = await fetch(`http://localhost:8000/course/teacher-delete-assignment/${assnId}`, {
-                method: 'DELETE',
+            const response = await apiClient.delete(`/course/teacher-delete-assignment/${assnId}`, {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
             });
-            const data = await response.json()
-            if (response.ok) {
+
+            const data = response.data;
+            if (response.status === 200) {
                 setAssignments((prev) => prev.filter((assignment) => assignment._id !== assnId));
                 setDeleteModal(!deleteModal)
                 setAssnId("")
@@ -92,17 +102,17 @@ function TeacherAssignments() {
     const getSubmissions = async (id) => {
         setLoading(true);
         try {
-            const response = await fetch(`http://localhost:8000/course/get-assignment-submissions/${id}`, {
-                method: 'GET',
+
+            const response = await apiClient.get(`/course/get-assignment-submissions/${id}`, {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
             });
 
-            const data = await response.json();
-            if (response.ok) {
+            const data = response.data;
+            if (response.status === 200) {
                 setSubmissions(data.submissions);
-                setModal(true); // Open modal after fetching submissions
+                setModal(true); 
             } else {
                 setError(data.message || 'Failed to fetch submissions');
             }
@@ -114,7 +124,7 @@ function TeacherAssignments() {
     };
 
     const handleViewPDF = (submission) => {
-        const backendOrigin = "http://localhost:8000";
+        const backendOrigin = `${API_URL}`;
         const formattedPath = `${backendOrigin}/${submission.filePath.replace(/\\/g, '/')}`.replace(/^\/+/, "");
 
         setSelectedSubmission({ ...submission, filePath: formattedPath });
@@ -228,17 +238,17 @@ function TeacherAssignments() {
                                                     <th>Actions</th>
                                                 </tr>
                                             </thead>
-                                            
-                                                {submissions.map((submission, index) => (
-                                                    <tbody>
-                                                        <tr>
-                                                            <td>{submission.name}</td>
-                                                            <td>{new Date(submission.submittedAt).toLocaleString()}</td>
-                                                            <td> <button className='btn table-button' onClick={() => handleViewPDF(submission)}>View</button></td>
-                                                        </tr>
-                                                    </tbody>
-                                                ))}
-                                            
+
+                                            {submissions.map((submission, index) => (
+                                                <tbody>
+                                                    <tr>
+                                                        <td>{submission.name}</td>
+                                                        <td>{new Date(submission.submittedAt).toLocaleString()}</td>
+                                                        <td> <button className='btn table-button' onClick={() => handleViewPDF(submission)}>View</button></td>
+                                                    </tr>
+                                                </tbody>
+                                            ))}
+
                                         </table>
                                     </>
                                 ) : (
