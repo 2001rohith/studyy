@@ -31,7 +31,7 @@ function TeacherLiveClass() {
     const [newMessage, setNewMessage] = useState('');
     const [showModal, setShowModal] = useState(false)
     const [hasUnread, setHasUnread] = useState(false);
-    const navigate = useNavigate(); 3
+    const navigate = useNavigate(); 
     const location = useLocation();
     const classId = location.state?.classId;
     const courseId = location.state?.classId;
