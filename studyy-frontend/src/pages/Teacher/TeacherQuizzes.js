@@ -31,12 +31,13 @@ function TeacherQuizzes() {
     const [message, setMessage] = useState('');
     const [quizId, setQuizId] = useState("")
 
-    if (!user) {
-        navigate('/');
-        return;
-    }
+    
 
     useEffect(() => {
+        if (!user) {
+            navigate('/');
+            return;
+        }
         const getQuizzes = async () => {
             try {
 

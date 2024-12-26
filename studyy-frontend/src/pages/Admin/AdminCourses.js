@@ -25,10 +25,7 @@ function AdminCourses() {
   const [courseID, setCourseID] = useState('');
   const [currentCourses, setCurrentCourses] = useState([]);
 
-  if (!user || token) {
-    navigate('/');
-    return;
-  }
+ 
 
   const getCourses = async () => {
     try {
@@ -55,6 +52,10 @@ function AdminCourses() {
   };
 
   useEffect(() => {
+    if (!user || token) {
+      navigate('/');
+      return;
+    }
     getCourses();
   }, []);
 

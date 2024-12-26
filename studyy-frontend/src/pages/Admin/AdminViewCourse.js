@@ -26,12 +26,11 @@ function AdminViewCourse() {
     const [contentType, setContentType] = useState("")
     console.log("course id", courseId)
 
-    if (!user || token) {
-        navigate('/');
-        return;
-    }
-
     useEffect(() => {
+        if (!user || token) {
+            navigate('/');
+            return;
+        }
         const getCourse = async () => {
             console.log("course id again", courseId)
 

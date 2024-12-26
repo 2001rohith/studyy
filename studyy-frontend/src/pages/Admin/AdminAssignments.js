@@ -25,10 +25,7 @@ function AdminAssignments() {
     const [courseName, setCourseName] = useState('');
     const [currentAssignments, setCurrentAssignments] = useState([]);
 
-    if (!user || token) {
-        navigate('/');
-        return;
-    }
+    
 
     const getAssignments = async () => {
         try {
@@ -55,6 +52,10 @@ function AdminAssignments() {
     };
 
     useEffect(() => {
+        if (!user || token) {
+            navigate('/');
+            return;
+        }
         getAssignments();
     }, []);
 

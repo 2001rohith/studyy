@@ -29,12 +29,13 @@ function AdminHome() {
     const [selectedUser, setSelectedUser] = useState(null);
     const [isBlocking, setIsBlocking] = useState(false);
 
-    if (!user || token) {
-        navigate('/');
-        return;
-    }
+    
     
     useEffect(() => {
+        if (!user || token) {
+            navigate('/');
+            return;
+        }
         const getUsers = async () => {
             try {
                 const response = await apiClient.get('/user/get-users', {

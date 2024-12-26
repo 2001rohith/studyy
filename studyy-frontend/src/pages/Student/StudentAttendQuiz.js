@@ -24,16 +24,15 @@ function StudentAttendQuiz() {
   const quiz = location.state?.quiz;
   const { user,token } = useUser();
 
-  if (!user) {
-    navigate('/');
-    return;
-}
-
   useEffect(() => {
+    if (!user) {
+      navigate('/');
+      return;
+  }
     if (quiz) {
       setLoading(false);
     }
-  }, [quiz]);
+  }, [quiz,user]);
 
   if (!quiz) {
     return <div>No quiz data available</div>;

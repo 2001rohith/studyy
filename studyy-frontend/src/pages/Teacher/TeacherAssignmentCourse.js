@@ -22,10 +22,7 @@ function TeacherAssignmentsCourses() {
     const [currentPage, setCurrentPage] = useState(1)
     const [coursePerPage] = useState(5)
 
-    if (!user) {
-        navigate('/');
-        return;
-    }
+    
 
     const getCourses = async () => {
         try {
@@ -51,6 +48,10 @@ function TeacherAssignmentsCourses() {
     }
 
     useEffect(() => {
+        if (!user) {
+            navigate('/');
+            return;
+        }
         getCourses()
     }, [])
 

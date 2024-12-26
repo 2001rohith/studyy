@@ -17,16 +17,19 @@ function Login() {
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
-    const { user, login } = useUser()
+    const { user, login } = useUser();
 
     useEffect(() => {
-        const { user,token } = useUser();
         if (user) {
-            if (user.role === 'admin') navigate('/admin-home', { replace: true });
-            else if (user.role === 'teacher') navigate('/teacher-home', { replace: true });
-            else navigate('/student-home', { replace: true });
+            if (user.role === 'admin') {
+                navigate('/admin-home', { replace: true });
+            } else if (user.role === 'teacher') {
+                navigate('/teacher-home', { replace: true });
+            } else {
+                navigate('/student-home', { replace: true });
+            }
         }
-    }, [navigate]);
+    }, [user, navigate]);
 
     const handlesubmit = async (e) => {
         e.preventDefault();

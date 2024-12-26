@@ -33,11 +33,6 @@ function TeacherAssignments() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    if (!user) {
-        navigate('/');
-        return;
-    }
-
     const getAssignments = async () => {
         try {
 
@@ -63,6 +58,10 @@ function TeacherAssignments() {
     };
 
     useEffect(() => {
+        if (!user) {
+            navigate('/');
+            return;
+        }
         getAssignments();
     }, [courseId]);
 

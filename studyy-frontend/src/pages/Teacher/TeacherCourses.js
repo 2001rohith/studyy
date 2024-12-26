@@ -36,11 +36,7 @@ function TeacherCourses() {
   const [emailModal, setEmailModal] = useState(false)
   console.log("user from local storage:", user)
 
-  if (!user) {
-    navigate('/');
-    return;
-}
-
+  
   const getCourses = async () => {
     try {
 
@@ -66,6 +62,11 @@ function TeacherCourses() {
   }
 
   useEffect(() => {
+    if (!user) {
+      navigate('/');
+      return;
+  }
+  
     getCourses()
   }, [])
 

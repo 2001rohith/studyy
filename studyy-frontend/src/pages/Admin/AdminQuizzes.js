@@ -25,11 +25,6 @@ function AdminQuizzes() {
   const [courseName, setCourseName] = useState('');
   const [currentQuizzes, setCurrentQuizzes] = useState([]);
 
-  if (!user || token) {
-    navigate('/');
-    return;
-}
-
   const getQuizzes = async () => {
     try {
       const response = await apiClient.get('/course/admin-get-quizzes', {
@@ -55,6 +50,10 @@ function AdminQuizzes() {
   };
 
   useEffect(() => {
+    if (!user || token) {
+      navigate('/');
+      return;
+  }
     getQuizzes();
   }, []);
 

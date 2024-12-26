@@ -29,12 +29,13 @@ function StudentCheckCourse() {
     const [confirmModal, setConfirmModal] = useState(false)
     console.log("course id", courseId)
 
-    if (!user) {
-        navigate('/');
-        return;
-    }
+    
 
     useEffect(() => {
+        if (!user) {
+            navigate('/');
+            return;
+        }
         const getCourse = async () => {
             console.log("course id again", courseId)
 

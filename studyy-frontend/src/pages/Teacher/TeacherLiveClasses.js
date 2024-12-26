@@ -30,11 +30,6 @@ function TeacherLiveClasses() {
     const [showToast, setShowToast] = useState(false)
     const [error, setError] = useState(null)
 
-    if (!user) {
-        navigate('/');
-        return;
-    }
-
     const fetchClasses = async () => {
         try {
 
@@ -87,8 +82,13 @@ function TeacherLiveClasses() {
     };
 
     useEffect(() => {
+        if (!user) {
+            navigate('/');
+            return;
+        }
+    
         if (courseId) fetchClasses();
-    }, [courseId]);
+    }, [courseId,user]);
 
     const handleAddClass = () => {
         navigate("/add-live-class", { state: { id: courseId } });

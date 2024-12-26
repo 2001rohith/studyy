@@ -29,12 +29,13 @@ function TeacherViewCourse() {
     const [showToast, setShowToast] = useState(false)
     const [message, setMessage] = useState('');
 
-    if (!user) {
-        navigate('/');
-        return;
-    }
+   
 
     useEffect(() => {
+        if (!user) {
+            navigate('/');
+            return;
+        }
         const getCourse = async () => {
             console.log("course id again", courseId)
 
