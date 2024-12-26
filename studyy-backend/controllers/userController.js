@@ -126,18 +126,18 @@ exports.Login = async (req, res) => {
         if (user.isBlocked === true) return res.status(400).json({ message: "Your profile has been blocked!" })
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" })
 
-        req.session.user = {
-            id: user._id.toString(),
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            token
-        }
+        // req.session.user = {
+        //     id: user._id.toString(),
+        //     email: user.email,
+        //     name: user.name,
+        //     role: user.role,
+        //     token
+        // }
         if (user.role === "teacher" && user.peerId === null) {
             user.peerId = uuidv4()
             await user.save()
         }
-        console.log(req.session.user.id)
+        // console.log(req.session.user.id)
         res.status(200).json({ token, user: { id: user._id, email: user.email, name: user.name, role: user.role }, message: "Login success" })
     } catch (error) {
         console.error("Login error:", error.message);
