@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
-// import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import TeacherSidebar from '../components/TeacherSidebar'
 import Footer2 from '../components/Footer2'
 import { useUser } from "../../UserContext"
 
 function TeacherHome() {
-  // const navigate = useNavigate()
+  const navigate = useNavigate()
   // const location = useLocation()
   const { user,token } = useUser();
   console.log("teacher peerid:", user)
