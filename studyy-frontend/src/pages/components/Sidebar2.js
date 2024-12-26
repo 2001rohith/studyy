@@ -14,9 +14,9 @@ function Sidebar() {
     const handleLogout = () => {
         logout()
         navigate("/", { replace: true });
-        window.history.pushState(null, '', '/login');
+        window.history.pushState(null, '', '/');
         window.onpopstate = function(event) {
-            window.history.pushState(null, '', '/login');
+            window.history.pushState(null, '', '/');
         }
     }
 
