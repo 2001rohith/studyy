@@ -4,6 +4,7 @@ import TeacherSidebar from '../components/TeacherSidebar'
 import io from 'socket.io-client'
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -20,7 +21,7 @@ function TeacherLiveClasses() {
     const location = useLocation()
     const courseId = location.state?.id
     console.log("course id from teacher all classes:", courseId)
-    const user = JSON.parse(localStorage.getItem('user'))
+    const { user,token } = useUser();
     const [message, setMessage] = useState("")
     const [classes, setClasses] = useState([])
     const [loading, setLoading] = useState(false)
@@ -29,12 +30,17 @@ function TeacherLiveClasses() {
     const [showToast, setShowToast] = useState(false)
     const [error, setError] = useState(null)
 
+    if (!user) {
+        navigate('/');
+        return;
+    }
+
     const fetchClasses = async () => {
         try {
 
             const response = await apiClient.get(`/course/teacher-get-classes/${courseId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -58,7 +64,7 @@ function TeacherLiveClasses() {
             
             const response = await apiClient.delete(`/course/teacher-delete-class/${selectedClass._id}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from '../../axiourl'; 
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,  
@@ -11,30 +12,34 @@ const apiClient = axios.create({
 });
 
 const SelectRole = () => {
-  const [selectedRole, setSelectedRole] = useState('');
-  const [email, setEmail] = useState(localStorage.getItem('email') || '');
-  const [token, setToken] = useState(localStorage.getItem('token') || '');
-  const [certificate, setCertificate] = useState(null);
-  const [message, setMessage] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+  const [selectedRole, setSelectedRole] = useState('');
+  const { user, login } = useUser()
+  const [email, setEmail] = useState(location.state?.email || '');
+  // const email = location.state?.email
+  // const token = location.state?.token
+  const [token, setToken] = useState(location.state?.token || '');
+  const [certificate, setCertificate] = useState(null);
+  const [message, setMessage] = useState('');
+  
 
-  const urlToken = new URLSearchParams(location.search).get('token');
+  // const urlToken = new URLSearchParams(location.search).get('token');
 
-  useEffect(() => {
-    const currentToken = urlToken || location.state?.token;
-    const currentEmail = location.state?.email;
+  // useEffect(() => {
+  //   // const currentToken = urlToken || location.state?.token;
+  //   // const currentEmail = location.state?.email;
 
-    if (currentToken) {
-      setToken(currentToken);
-      localStorage.setItem('token', currentToken);
-    }
+  //   if (currentToken) {
+  //     setToken(currentToken);
+  //     localStorage.setItem('token', currentToken);
+  //   }
 
-    if (currentEmail) {
-      setEmail(currentEmail);
-      localStorage.setItem('email', currentEmail);
-    }
-  }, [urlToken, location.state?.token, location.state?.email]);
+  //   if (currentEmail) {
+  //     setEmail(currentEmail);
+  //     localStorage.setItem('email', currentEmail);
+  //   }
+  // }, [urlToken, location.state?.token, location.state?.email]);
 
   const handleRoleSelection = async () => {
     try {
@@ -52,13 +57,12 @@ const SelectRole = () => {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
-        });
+        })
 
-        if (response.data.status === 'ok') {
-          const data = response.data;
-          localStorage.setItem('user', JSON.stringify(data.user));
-
-          const userData = { email, role: data.role };
+        if (response.status === 200) {
+          const data = response.data
+          login(data.user, data.token)
+          const userData = { email, role: data.role }
           if (data.role === 'teacher') {
             navigate('/teacher-home', { state: { user: userData } });
           } else if (data.role === 'student') {

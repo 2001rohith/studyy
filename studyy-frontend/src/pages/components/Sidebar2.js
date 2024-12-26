@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useUser } from "../../UserContext"
 
 function Sidebar() {
     const navigate = useNavigate();
     const [showModal, setShowModal] = useState(false)
+    const { user, logout } = useUser();
 
     const showConfirmation = () => {
         setShowModal(true)
     }
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-
+        logout()
         navigate("/", { replace: true });
-    };
+        window.history.pushState(null, '', '/login');
+        window.onpopstate = function(event) {
+            window.history.pushState(null, '', '/login');
+        }
+    }
 
     return (
         <div className="sidebar">

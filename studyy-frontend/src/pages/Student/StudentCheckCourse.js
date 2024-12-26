@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import StudentSidebar from '../components/StudentSidebar'
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -16,7 +17,7 @@ const apiClient = axios.create({
 function StudentCheckCourse() {
     const navigate = useNavigate()
     const location = useLocation()
-    const user = JSON.parse(localStorage.getItem('user'));
+    const { user, token } = useUser();
     const [courseId] = useState(location.state?.courseId)
     console.log("user id from checkout page:", user.id)
     console.log("course id from checkout page:", courseId)
@@ -27,6 +28,12 @@ function StudentCheckCourse() {
     const [showModal, setShowModal] = useState(false)
     const [confirmModal, setConfirmModal] = useState(false)
     console.log("course id", courseId)
+
+    if (!user) {
+        navigate('/');
+        return;
+    }
+
     useEffect(() => {
         const getCourse = async () => {
             console.log("course id again", courseId)
@@ -35,7 +42,7 @@ function StudentCheckCourse() {
 
                 const response = await apiClient.get(`/course/get-course/${courseId}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
 
@@ -62,7 +69,7 @@ function StudentCheckCourse() {
             
             const response = await apiClient.post(`/course/student-enroll`, { studentId: user.id, courseId }, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

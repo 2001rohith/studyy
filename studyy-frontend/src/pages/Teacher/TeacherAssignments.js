@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import TeacherSidebar from '../components/TeacherSidebar';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -16,6 +17,7 @@ function TeacherAssignments() {
     const navigate = useNavigate();
     const location = useLocation();
     const cId = location.state?.id;
+    const { user,token } = useUser();
     const [courseId] = useState(cId);
     const [assignments, setAssignments] = useState([]);
     const [courseName, setCourseName] = useState('');
@@ -31,12 +33,17 @@ function TeacherAssignments() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    if (!user) {
+        navigate('/');
+        return;
+    }
+
     const getAssignments = async () => {
         try {
 
             const response = await apiClient.get(`/course/get-assignments/${courseId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -76,7 +83,7 @@ function TeacherAssignments() {
         try {
             const response = await apiClient.delete(`/course/teacher-delete-assignment/${assnId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -105,7 +112,7 @@ function TeacherAssignments() {
 
             const response = await apiClient.get(`/course/get-assignment-submissions/${id}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

@@ -3,6 +3,7 @@ import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -16,7 +17,7 @@ const TeacherAddLiveClass = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const courseId = location.state?.id;
-    const user = JSON.parse(localStorage.getItem('user'));
+    const { user,token } = useUser();
     const [message, setMessage] = useState("");
     const [title, setTitle] = useState('');
     const [date, setDate] = useState('');
@@ -42,7 +43,7 @@ const TeacherAddLiveClass = () => {
                 teacherId: user.id,
             }, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

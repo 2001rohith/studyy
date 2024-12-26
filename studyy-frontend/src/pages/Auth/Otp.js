@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import API_URL from '../../axiourl'; 
+import API_URL from '../../axiourl';
 
 const apiClient = axios.create({
-    baseURL: API_URL, 
+    baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -13,15 +13,18 @@ const apiClient = axios.create({
 
 function Otp() {
     const [otp, setOtp] = useState('');
-    const [message, setMessage] = useState('OTP has been sent to your email!');
+    const [message, setMessage] = useState('OTP has been sent via SMS!');
     const [timer, setTimer] = useState(120);
     const [isResendDisabled, setResendDisabled] = useState(true);
     const location = useLocation();
     const navigate = useNavigate();
-    const email = location.state?.email;
+    const phone = location.state?.trimmedPhone;
+    const email = location.state?.trimmedEmail;
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setMessage("");
         try {
             if (!otp) {
                 setMessage("Enter the OTP");
@@ -31,20 +34,24 @@ function Otp() {
                 setMessage("Too short for OTP");
                 return;
             }
-
-            const response = await apiClient.post('/user/verify-otp', { email, otp });
+    
+            const response = await apiClient.post('/user/verify-otp', { email, phone, otp });
             const data = response.data;
-            setMessage(data.message);
-            if (data.status === 'ok') {
+            setMessage(data.message)
+            if (response.status === 200) {
                 const token = data.token;
-                localStorage.setItem('token', token);
-                localStorage.setItem('email', email);
                 navigate("/select-role", { state: { email, token } });
             }
         } catch (error) {
+            if (error.response) {
+                setMessage(error.response.data.message || "An error occurred while verifying OTP");
+            } else {
+                setMessage("Network error or server not reachable");
+            }
             console.error("Error during OTP verification:", error);
         }
     };
+    
 
     useEffect(() => {
         let countdown = null;

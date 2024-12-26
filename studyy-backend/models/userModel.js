@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require("bcryptjs")
 const crypto = require("crypto");
 const { type } = require('os');
+const { required } = require('nodemon/lib/config');
 
 const UserSchema = new mongoose.Schema({
     name: {
@@ -12,6 +13,10 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true
+    },
+    phone: {
+        type: String,
+        required: true,
     },
     password: {
         type: String,

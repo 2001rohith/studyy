@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar2 from '../components/Sidebar2';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -14,6 +15,7 @@ const apiClient = axios.create({
 
 function AdminQuizzes() {
   const navigate = useNavigate();
+  const { user,token } = useUser();
   const [quizzes, setQuizzes] = useState([]);
   const [allQuizzes, setAllQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,11 +25,16 @@ function AdminQuizzes() {
   const [courseName, setCourseName] = useState('');
   const [currentQuizzes, setCurrentQuizzes] = useState([]);
 
+  if (!user || token) {
+    navigate('/');
+    return;
+}
+
   const getQuizzes = async () => {
     try {
       const response = await apiClient.get('/course/admin-get-quizzes', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -72,7 +79,7 @@ function AdminQuizzes() {
     try {
         const response = await apiClient.delete(`/course/admin-delete-quiz/${id}`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
           },
         });
         if (response.status === 200) {

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import Sidebar2 from '../components/Sidebar2'
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -15,6 +16,7 @@ const apiClient = axios.create({
 function AdminViewCourse() {
     const navigate = useNavigate()
     const location = useLocation()
+    const { user,token } = useUser();
     const courseId = location.state?.id
     const [course, setCourse] = useState()
     const [loading, setLoading] = useState(true)
@@ -23,6 +25,12 @@ function AdminViewCourse() {
     const [showModal, setShowModal] = useState(false)
     const [contentType, setContentType] = useState("")
     console.log("course id", courseId)
+
+    if (!user || token) {
+        navigate('/');
+        return;
+    }
+
     useEffect(() => {
         const getCourse = async () => {
             console.log("course id again", courseId)
@@ -30,7 +38,7 @@ function AdminViewCourse() {
             try {
                 const response = await apiClient.get(`/course/admin-get-course/${courseId}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
 
@@ -53,7 +61,7 @@ function AdminViewCourse() {
         try {
             const response = await apiClient.delete(`/course/teacher-delete-module/${id}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

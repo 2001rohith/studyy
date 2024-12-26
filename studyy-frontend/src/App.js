@@ -1,5 +1,6 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { UserProvider } from './UserContext';
 import SignUp from "./pages/Auth/SignUp"
 import Login from './pages/Auth/Login';
 import Otp from './pages/Auth/Otp';
@@ -51,6 +52,7 @@ import TeacherEditClass from './pages/Teacher/TeacherEditClass';
 
 function App() {
   return (
+    <UserProvider>
     <>
       <Router>
         <Routes>
@@ -288,6 +290,7 @@ function App() {
         </Routes>
       </Router>
     </>
+    </UserProvider>
   );
 }
 

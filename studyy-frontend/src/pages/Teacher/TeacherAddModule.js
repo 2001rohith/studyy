@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import TeacherSidebar from '../components/TeacherSidebar';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -15,7 +16,7 @@ function TeacherAddModule() {
     const location = useLocation();
     const navigate = useNavigate();
     const courseId = location.state?.courseId;
-
+    const { user,token } = useUser();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [pdfFile, setPdfFile] = useState(null);
@@ -46,7 +47,7 @@ function TeacherAddModule() {
             setLoading(true);
             const response = await apiClient.post(`/course/teacher-add-module`,formData, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

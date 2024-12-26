@@ -3,6 +3,7 @@ import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -13,6 +14,7 @@ const apiClient = axios.create({
 });
 
 const TeacherEditAssignment = () => {
+    const { user,token } = useUser();
     const navigate = useNavigate();
     const location = useLocation();
     const assignment = location.state?.assignment || {};
@@ -49,7 +51,7 @@ const TeacherEditAssignment = () => {
            
             const response = await apiClient.put(`/course/teacher-edit-assignment/${assignment._id}`, { title: trimmedTitle, description: trimmedDescription, dueDate }, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -94,7 +96,7 @@ const TeacherEditAssignment = () => {
                                     type="date"
                                     value={dueDate}
                                     onChange={(e) => setDueDate(e.target.value)}
-                                    required
+                                    
                                 />
                                 <small>Description:</small>
                                 <textarea

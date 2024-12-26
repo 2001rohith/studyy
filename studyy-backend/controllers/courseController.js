@@ -11,7 +11,7 @@ const sendEmail = require("../helpers/sendEmail")
 exports.getStudents = async (req, res) => {
     try {
         let users = await User.find({ role: "student" })
-        res.status(200).json({  users, message: "student list for teacher" })
+        res.status(200).json({ users, message: "student list for teacher" })
     } catch (error) {
         console.error("get students error:", error.message);
         res.status(500).json({ message: "Server error" });
@@ -20,6 +20,7 @@ exports.getStudents = async (req, res) => {
 
 exports.getCourses = async (req, res) => {
     const teacherId = req.user._id
+    console.log("teacher id from get courses:",teacherId)
     try {
         const courses = await Course.find({ teacher: teacherId })
             .populate('studentsEnrolled', 'name')
@@ -34,7 +35,7 @@ exports.getCourses = async (req, res) => {
             studentCount: course.studentsEnrolled.length || 0,
             assignmentCount: course.assignments.length || 0
         }));
-        res.status(200).json({  courses: coursesToSend, message: "Course list for teacher" });
+        res.status(200).json({ courses: coursesToSend, message: "Course list for teacher" });
     } catch (error) {
         console.error("Get courses error:", error.message);
         res.status(500).json({ message: "Server error" });
@@ -54,10 +55,10 @@ exports.createCourse = async (req, res) => {
     const { title, description, userId } = req.body;
     const teacher = await User.findById(userId)
     if (!userId) {
-        return res.status(401).json({ message: 'Unauthorized. Please log in.' });
+        return res.status(400).json({ message: 'Unauthorized. Please log in.' });
     }
     if (teacher.isTeacherVerified === false) {
-        return res.status(403).json({ message: "Only verified teachers can create a course.  Wait for your verification!" });
+        return res.status(400).json({ message: "Only verified teachers can create a course.  Wait for your verification!" });
     }
     try {
         const newCourse = new Course({
@@ -111,7 +112,7 @@ exports.EditCourse = async (req, res) => {
     try {
         let updatedCourse = await Course.findByIdAndUpdate(courseId, { title, description }, { new: true })
         if (!updatedCourse) res.status(404).json({ status: "notok", message: "course not found" })
-        res.status(200).json({  user: updatedCourse, message: "course updated successfully" });
+        res.status(200).json({ user: updatedCourse, message: "course updated successfully" });
     } catch (error) {
         console.error("Update course error:", error.message);
         res.status(500).json({ message: "Server error" });
@@ -213,7 +214,7 @@ exports.AdmingetCourse = async (req, res) => {
         }
         if (!course) return res.status(404).json({ message: "no course found" })
         console.log(course)
-        res.status(200).json({  course: courseToSend, modules, message: "fetched course succesfully" })
+        res.status(200).json({ course: courseToSend, modules, message: "fetched course succesfully" })
     } catch (error) {
         console.error("delete course error:", error.message);
         res.status(500).json({ message: "Server error" });
@@ -232,7 +233,7 @@ exports.GetAssignments = async (req, res) => {
         const course = await Course.findById({ _id: courseId })
         // console.log("course:" ,course)
         if (assignments.length === 0) {
-            return res.status(203).json({ message: 'No assignments found for this course.',course: course.title });
+            return res.status(203).json({ message: 'No assignments found for this course.', course: course.title });
         }
 
         const assignmentWithCourse = assignments.map(assignment => ({
@@ -243,7 +244,7 @@ exports.GetAssignments = async (req, res) => {
             course: assignment.course ? assignment.course.title : "unknown assignment",
             submissions: assignment.submissions
         }))
-        res.status(200).json({  assignments: assignmentWithCourse, course: course.title });
+        res.status(200).json({ assignments: assignmentWithCourse, course: course.title });
     } catch (error) {
         console.error("get assignments error:", error.message);
         res.status(500).json({ message: "Server error" });
@@ -372,18 +373,32 @@ exports.GetQuiz = async (req, res) => {
 
 exports.EditQuiz = async (req, res) => {
     const quizId = req.params.id;
-    const { title, questions } = req.body;
+    const { title, questions, courseId, teacherId } = req.body;
 
     try {
         const updatedQuiz = await Quiz.findByIdAndUpdate(
             quizId,
-            { title, questions },
+            {
+                title,
+                questions,
+                $set: { submissions: [] }
+            },
             { new: true, runValidators: true }
         );
 
         if (!updatedQuiz) {
             return res.status(404).json({ message: "Quiz not found" });
         }
+        const teacher = await User.findById(teacherId)
+        const course = await Course.findById(courseId)
+        if (!course) return res.status(404).json({ message: 'course not found' })
+        const message = `Quiz ${title} has been updated, Please attend again!`
+        const notification = new Notification({
+            course: courseId,
+            message: message,
+            sender: teacherId
+        })
+        await notification.save()
 
         res.status(200).json({ message: "Quiz updated successfully", quiz: updatedQuiz });
     } catch (error) {
@@ -591,6 +606,7 @@ exports.studentGetQuizzes = async (req, res) => {
                 })),
                 course: quiz.course ? quiz.course.title : "unknown course",
                 alreadySubmitted: Boolean(studentSubmission),
+                numberOfQuestions: quiz.questions.length,
                 score: studentSubmission ? studentSubmission.score : null,
                 submissions: quiz.submissions.length
             };
@@ -610,7 +626,7 @@ exports.enrolledCourses = async (req, res) => {
         if (!student) return res.status(404).json({ message: "user not found" })
         const courseIds = student.enrolledCourses.map(course => course._id)
         const enrolledCourses = student.enrolledCourses
-
+        console.log("enrolled course:", enrolledCourses)
         res.status(200).json({ courses: enrolledCourses, message: "fetched enrolled courses" })
     } catch (error) {
         console.error("Error fetching enrolled courses:", error.message);
@@ -672,7 +688,7 @@ exports.createClass = async (req, res) => {
         console.log("new class:", newClass)
 
         await newClass.save();
-        res.json({ status: 'ok', message: 'Class added successfully' });
+        res.status(200).json({ status: 'ok', message: 'Class added successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ status: 'error', message: 'Failed to add class' });
@@ -691,7 +707,7 @@ exports.studentGetClasses = async (req, res) => {
 
         const courseIds = student.enrolledCourses.map(course => course._id);
 
-        const classes = await Class.find({ course: { $in: courseIds } })
+        const classes = await Class.find({ course: { $in: courseIds },status: { $ne: "Ended" } })
             .populate({
                 path: "course",
                 select: "title"

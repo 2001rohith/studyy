@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import API_URL from '../../axiourl'; 
+import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
-    baseURL: API_URL, 
+    baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -16,9 +17,10 @@ function Login() {
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
+    const { user, login } = useUser()
 
     useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('user'));
+        const { user,token } = useUser();
         if (user) {
             if (user.role === 'admin') navigate('/admin-home', { replace: true });
             else if (user.role === 'teacher') navigate('/teacher-home', { replace: true });
@@ -46,10 +48,10 @@ function Login() {
             const data = response.data;
             setMessage(data.message);
 
+            console.log("data from login:", data)
             if (response.status === 200) {
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify(data.user));
-                console.log('role from login:', data.user.role);
+                login(data.user, data.token)
+
                 if (data.user.role === 'admin') {
                     navigate('/admin-home', { state: { user: data.user }, replace: true });
                 } else if (data.user.role === 'teacher') {
@@ -73,7 +75,7 @@ function Login() {
             <div className='wrapper'>
                 <div className='container login-boxx'>
                     <div className='login-items'>
-                        <h2 className="login-title">studyy</h2>
+                        <h2 className="login-title">Studyy</h2>
                         <h5 className='heading'>Welcome Back!</h5>
                         <div className='input'>
                             {message && (

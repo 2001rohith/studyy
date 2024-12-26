@@ -3,6 +3,7 @@ import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -16,6 +17,7 @@ const apiClient = axios.create({
 const TeacherAddAssignment = () => {
     const location = useLocation();
     const navigate = useNavigate()
+    const { user,token } = useUser();
     const cId = location.state?.courseId;
     const [courseId, setCourseId] = useState(cId)
     console.log("course id from add assignmrnt", courseId)
@@ -25,6 +27,10 @@ const TeacherAddAssignment = () => {
     const [deadlineDate, setDeadlineDate] = useState('');
     const [message, setMessage] = useState('Fill Fields!');
 
+    if (!user) {
+        navigate('/');
+        return;
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -39,7 +45,7 @@ const TeacherAddAssignment = () => {
             
             const response = await apiClient.post(`/course/create-assignment`, { title: trimmedTitle, description, dueDate: deadlineDate, courseId }, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -92,6 +98,7 @@ const TeacherAddAssignment = () => {
                                 </div>
                             </div>}
                             <form onSubmit={handleSubmit}>
+                            <label>Title:</label>
                                 <input
                                     className="form-control mb-3"
                                     type="text"
@@ -100,12 +107,14 @@ const TeacherAddAssignment = () => {
                                     onChange={(e) => setTitle(e.target.value)}
                                     required
                                 />
+                                <label>Description:</label>
                                 <textarea className='form-control'
                                     value={description}
                                     placeholder="Description"
                                     onChange={(e) => setDescription(e.target.value)}
                                     required
                                 />
+                                <label>Date:</label>
                                 <input
                                     className="form-control mb-3"
                                     type="date"

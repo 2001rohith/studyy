@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import TeacherSidebar from '../components/TeacherSidebar'
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -14,19 +15,24 @@ const apiClient = axios.create({
 
 function TeacherQuizCourses() {
     const navigate = useNavigate()
-    const user = JSON.parse(localStorage.getItem('user'));
+    const { user,token } = useUser();
     const [courses, setCourses] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [currentPage, setCurrentPage] = useState(1)
     const [coursePerPage] = useState(5)
 
+    if (!user) {
+        navigate('/');
+        return;
+    }
+
     const getCourses = async () => {
         try {
             
             const response = await apiClient.get(`/course/get-courses`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

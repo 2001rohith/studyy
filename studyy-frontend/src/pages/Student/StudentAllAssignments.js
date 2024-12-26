@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StudentSidebar from '../components/StudentSidebar';
-
+import { useUser } from "../../UserContext"
 import axios from 'axios';
 import API_URL from '../../axiourl';
 
@@ -11,24 +11,30 @@ const apiClient = axios.create({
         'Accept': 'application/json',
     },
 });
+
 function StudentAllAssignments() {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem('user'));
+    const { user,token } = useUser();
     const [loading, setLoading] = useState(true)
     const [assignments, setAssignments] = useState([]);
     const fileInputRefs = useRef({});
     const [showToast, setShowToast] = useState(false)
-    const [message,setMessage] = useState("")
+    const [modal, setModal] = useState(false)
+    const [message, setMessage] = useState("")
+    const [assignmentDetails, setAssignmentDetails] = useState({ title: "", description: "", dueDate: "" })
 
     useEffect(() => {
+        if (!user) {
+            navigate('/');
+            return;
+        }
         const getAssignments = async () => {
             try {
                 const response = await apiClient.get(`/course/student-get-assignments/${user.id}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
-
                 const data = response.data;
                 if (response.status === 200) {
                     setAssignments(data.assignments);
@@ -62,7 +68,6 @@ function StudentAllAssignments() {
         formData.append('studentId', user.id);
 
         try {
-            const token = localStorage.getItem('token');
             if (!token) {
                 throw new Error('Authentication token is missing');
             }
@@ -76,8 +81,9 @@ function StudentAllAssignments() {
             const data = response.data
 
             if (response.status === 200) {
-               setMessage("Assignment Uploaded")
-               setShowToast(true)
+                setMessage("Assignment Uploaded")
+                setModal(false)
+                setShowToast(true)
                 setAssignments(prevAssignments =>
                     prevAssignments.map(a =>
                         a._id === assignmentId
@@ -91,21 +97,30 @@ function StudentAllAssignments() {
                     )
                 );
             } else {
-                console.log("Error:",data.message);
+                console.log("Error:", data.message);
                 setMessage(data.message)
                 setShowToast(true)
             }
         } catch (error) {
             if (error.response) {
                 console.error('Server Error:', error.response.data);
-                
+
             } else {
                 console.error('Error submitting assignment:', error.message);
-                
+
             }
         }
     };
 
+    const openUploadModal = (assignment) => {
+        setAssignmentDetails(assignment);
+        setModal(true);
+    };
+
+    const closeUploadModal = () => {
+        setModal(false);
+        setAssignmentDetails({ title: '', description: '' });
+    }
 
     if (loading) {
         return <div className="spinner-border text-primary spinner2" role="status">
@@ -135,28 +150,18 @@ function StudentAllAssignments() {
                                             <div className="card-body text-center">
                                                 <h5 className="card-title">{assignment.title}</h5>
                                                 <h6>{assignment.course}</h6>
-                                                <small className="card-text">{assignment.description}</small>
                                             </div>
                                             <div className='text-center'>
                                                 {
                                                     assignment.submissions && Array.isArray(assignment.submissions) &&
                                                         !assignment.submissions.some(submission => submission.student.toString() === user.id.toString()) ? (
-                                                        <>
-                                                            <button
-                                                                className="btn button mb-4"
-                                                                style={{ width: "100px" }}
-                                                                onClick={() => handleFileUploadClick(assignment._id)}
-                                                            >
-                                                                Upload
-                                                            </button>
-                                                            <input
-                                                                type="file"
-                                                                accept=".pdf,.mp4"
-                                                                style={{ display: "none" }}
-                                                                ref={(el) => (fileInputRefs.current[assignment._id] = el)}
-                                                                onChange={(e) => handleFileChange(e, assignment._id)}
-                                                            />
-                                                        </>
+                                                        <button
+                                                            className="btn button mb-4"
+                                                            style={{ width: "100px" }}
+                                                            onClick={() => openUploadModal(assignment)}
+                                                        >
+                                                            View
+                                                        </button>
                                                     ) : (
                                                         <h6 className='mb-5' style={{ color: "#28A804" }}>Submitted!</h6>
                                                     )
@@ -170,6 +175,68 @@ function StudentAllAssignments() {
                     </div>
                 </div>
             </div>
+            {modal && (
+                <div
+                    className="modal show d-block"
+                    tabIndex="-1"
+                    role="dialog"
+                    style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+                >
+                    <div className="modal-dialog" role="document">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Upload Assignment</h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={closeUploadModal}
+                                ></button>
+                            </div>
+                            <div className="modal-body noti-body" style={{ maxHeight: '300px'}}>
+                                <div className='student-assignment-banner'>
+                                    <h4>{assignmentDetails.course}</h4>
+                                </div>
+                                <h5 className='mt-4 mb-3' style={{ color: "#0572e6" }}> {assignmentDetails.title}</h5>
+                                <p><strong>Description:</strong> {assignmentDetails.description}</p>
+                                <p><strong>Due date: {new Date(assignmentDetails.deadline).toLocaleString()}</strong></p>
+                                <div className="form-group">
+                                    {/* <label htmlFor="fileUpload" className="form-label">
+                                        Choose a file to upload
+                                    </label> */}
+
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <>
+                                    <button
+                                        className="btn button "
+                                        // style={{ width: "100px" }}
+                                        onClick={() => handleFileUploadClick(assignmentDetails._id)}
+                                    >
+                                        Upload
+                                    </button>
+                                    <input
+                                        type="file"
+                                        accept=".pdf,.mp4"
+                                        style={{ display: "none" }}
+                                        ref={(el) => (fileInputRefs.current[assignmentDetails._id] = el)}
+                                        onChange={(e) => handleFileChange(e, assignmentDetails._id)}
+                                    />
+                                </>
+                                <button
+                                    type="button"
+                                    className="btn button"
+                                    onClick={closeUploadModal}
+                                >
+                                    Cancel
+                                </button>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {showToast && (
                 <div className="toast show position-fixed  bottom-0 end-0 m-3" style={{ borderRadius: "15px", backgroundColor: "#0056b3", color: "white" }}>
                     <div className="toast-body">

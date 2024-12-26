@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar2 from '../components/Sidebar2';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -14,7 +15,7 @@ const apiClient = axios.create({
 
 function AdminCourses() {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user'));
+  const { user, token } = useUser();
   const [courses, setCourses] = useState([]);
   const [allCourses, setAllCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,11 +25,16 @@ function AdminCourses() {
   const [courseID, setCourseID] = useState('');
   const [currentCourses, setCurrentCourses] = useState([]);
 
+  if (!user || token) {
+    navigate('/');
+    return;
+  }
+
   const getCourses = async () => {
     try {
       const response = await apiClient.get(`/course/admin-get-courses`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -73,7 +79,7 @@ function AdminCourses() {
     try {
       const response = await apiClient.delete(`/course/teacher-delete-course/${id}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 

@@ -3,6 +3,7 @@ import TeacherSidebar from '../components/TeacherSidebar'
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -13,6 +14,7 @@ const apiClient = axios.create({
 
 
 const TeacherEditModule = () => {
+    const { user,token } = useUser();
     const navigate = useNavigate()
     const location = useLocation()
     const mod = location.state?.module
@@ -34,10 +36,7 @@ const TeacherEditModule = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!pdfFile) {
-            alert("Please select a PDF file to upload");
-            return;
-        }
+      
 
         const formData = new FormData();
         formData.append('title', title);
@@ -47,16 +46,16 @@ const TeacherEditModule = () => {
 
         try {
             setLoading(true);
-            
+
             const response = await apiClient.put(`/course/teacher-edit-module/${moduleId}`, formData, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
             const data = response.data;
             if (response.status === 200) {
-                alert("Module added successfully");
+                alert("Module updated successfully");
                 navigate("/teacher-edit-course", { state: { course } })
             } else {
                 alert(data.message || "Failed to add module");
@@ -82,7 +81,9 @@ const TeacherEditModule = () => {
                         <div className='other-forms'>
                             <h5 className='mb-5'>Edit Module</h5>
                             <form onSubmit={handleSubmit}>
+                                <label>Title:</label>
                                 <input className='form-control' type="text" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                                <label>Description:</label>
                                 <textarea className='form-control' placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} required />
                                 <label>Upload PDF:</label>
                                 <input
@@ -90,14 +91,15 @@ const TeacherEditModule = () => {
                                     type="file"
                                     accept="application/pdf"
                                     onChange={handleFileChange}
-                                    required
+
                                 />
+                                <label>Upload Video:</label>
                                 <input
                                     className='form-control'
                                     type="file"
                                     accept="video/mp4"
                                     onChange={handleVideoFileChange}
-                                    required
+
                                 />
                                 <button className='btn btn-secondary button mb-3' type="submit">Save</button>
                             </form>

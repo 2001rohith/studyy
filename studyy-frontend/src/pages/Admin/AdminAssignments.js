@@ -3,18 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar2 from '../components/Sidebar2';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-    },
+    }
 });
 
 function AdminAssignments() {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem('user'));
+    const { user, token } = useUser();
     const [assignments, setAssignments] = useState([]);
     const [allAssignments, setAllAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -24,11 +25,16 @@ function AdminAssignments() {
     const [courseName, setCourseName] = useState('');
     const [currentAssignments, setCurrentAssignments] = useState([]);
 
+    if (!user || token) {
+        navigate('/');
+        return;
+    }
+
     const getAssignments = async () => {
         try {
             const response = await apiClient.get('/course/admin-get-assignments', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -72,7 +78,7 @@ function AdminAssignments() {
         try {
             const response = await apiClient.delete(`/course/admin-delete-assignment/${id}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
             if (response.status === 200) {

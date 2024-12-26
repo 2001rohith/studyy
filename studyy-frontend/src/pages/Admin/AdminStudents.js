@@ -1,141 +1,193 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import Sidebar2 from '../components/Sidebar2'
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import StudentSidebar from '../components/StudentSidebar';
+import { useUser } from "../../UserContext"
 
-function AdminStudents() {
-    const navigate = useNavigate()
-    // const location = useLocation()
-    // const email = location.state?.user.email
-    const [users, setUsers] = useState([])
-    const [filteredUsers, setFilteredUsers] = useState([])
-    const [searchEmail, setSearchEmail] = useState('')
-    const [currentPage, setCurrentPage] = useState(1)
-    const [usersPerPage] = useState(5)
+import axios from 'axios';
+import API_URL from '../../axiourl';
+
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Accept': 'application/json',
+    },
+});
+
+function StudentAllAssignments() {
+    const navigate = useNavigate();
+    const { user,token } = useUser();
+    const [loading, setLoading] = useState(true)
+    const [assignments, setAssignments] = useState([]);
+    const fileInputRefs = useRef({});
+    const [showToast, setShowToast] = useState(false)
+    const [message, setMessage] = useState("")
+
+    if (!user || token) {
+        navigate('/');
+        return;
+    }
+
     useEffect(() => {
-        const getTeachers = async () => {
+        const getAssignments = async () => {
             try {
-                const response = await fetch("http://localhost:8000/user/get-students", {
-                    method: "GET",
+                const response = await apiClient.get(`/course/student-get-assignments/${user.id}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                })
-                let data = await response.json()
-                setUsers(data.users)
-                setFilteredUsers(data.users)
-            } catch (error) {
-                console.log("error in fetching students from admin", error)
-            }
-        }
-        getTeachers()
-    }, [])
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
 
-    useEffect(() => {
-        if (searchEmail === '') {
-            setFilteredUsers(users)
-        } else {
-            const results = users.filter(user =>
-                user.email.toLowerCase().includes(searchEmail.toLowerCase())
-            );
-            setFilteredUsers(results);
-        }
-    }, [searchEmail, users]);
-
-    const indexOfLastUser = currentPage * usersPerPage;
-    const indexOfFirstUser = indexOfLastUser - usersPerPage;
-    const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-    const handleBlock = async (userId, isBlocked) => {
-        if (!window.confirm(`Are you sure you want to ${isBlocked ? "unblock" : "block"} this user?`)) return;
-
-        try {
-            const response = await fetch(`http://localhost:8000/user/admin-block-user/${userId}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
+                const data = response.data;
+                if (response.status === 200) {
+                    setAssignments(data.assignments);
+                    setLoading(false)
+                    console.log("assignments:", data.assignments);
+                } else {
+                    console.log("something went wrong:", data.message);
                 }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                alert(data.message)
-                navigate(0)
-            } else {
-                alert("Failed to block/unblock user");
+            } catch (error) {
+                console.log("error in fetching assignments:", error);
             }
-        } catch (error) {
-            console.error("Error during blocking/unblocking:", error);
+        };
+        getAssignments();
+    }, []);
+
+    const handleFileUploadClick = (assignmentId) => {
+        if (fileInputRefs.current[assignmentId]) {
+            fileInputRefs.current[assignmentId].click();
         }
     };
 
+    const handleFileChange = async (e, assignmentId) => {
+        const file = e.target.files[0];
+        if (!file) {
+            alert('No file selected');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('studentId', user.id);
+
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Authentication token is missing');
+            }
+
+            const response = await apiClient.post(`/course/submit-assignment/${assignmentId}`, formData, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            const data = response.data
+
+            if (response.status === 200) {
+                setMessage("Assignment Uploaded")
+                setShowToast(true)
+                setAssignments(prevAssignments =>
+                    prevAssignments.map(a =>
+                        a._id === assignmentId
+                            ? {
+                                ...a,
+                                submissions: Array.isArray(a.submissions)
+                                    ? [...a.submissions, { student: user.id, filePath: 'path-to-file' }]
+                                    : [{ student: user.id, filePath: 'path-to-file' }],
+                            }
+                            : a
+                    )
+                );
+            } else {
+                console.log("Error:", data.message);
+                setMessage(data.message)
+                setShowToast(true)
+            }
+        } catch (error) {
+            if (error.response) {
+                console.error('Server Error:', error.response.data);
+
+            } else {
+                console.error('Error submitting assignment:', error.message);
+
+            }
+        }
+    };
+
+
+    if (loading) {
+        return <div className="spinner-border text-primary spinner2" role="status">
+            <span className="visually-hidden">Loading...</span>
+        </div>
+    }
     return (
         <>
             <div className='row'>
                 <div className='col text-light side-bar'>
-                    <Sidebar2 />
+                    <StudentSidebar />
                 </div>
-                <div className='col text-light '>
+                <div className='col text-dark'>
                     <div className='row headers'>
-                        <h4>Students</h4>
+                        <h4>Assignments</h4>
                     </div>
-                    <div className='row content'>
-                        <div className='search-bar'>
-                        <input
-                            type="text"
-                            placeholder="Search by email"
-                            value={searchEmail}
-                            onChange={(e) => setSearchEmail(e.target.value)}
-                        />
-                        <button className='btn btn-secondary' onClick={() => setSearchEmail('')}>Clear</button>
-                        </div>
-                        <table class="table table-default table-borderless table-hover table-striped-columns">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Blocked</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {
-                                    filteredUsers.map((user, index) => (
-                                        <tr key={user._id}>
-                                            <td>{index + 1}</td>
-                                            <td>{user.name}</td>
-                                            <td>{user.email}</td>
-                                            <td>{user.isBlocked ? 'Yes' : 'No'}</td>
-                                            <td>
-                                            {user.isBlocked 
-                                                ? <button className='btn table-button mx-1' onClick={() => handleBlock(user._id, user.isBlocked)}>Unblock</button>
-                                                : <button className='btn table-button mx-1' onClick={() => handleBlock(user._id, user.isBlocked)}>Block</button>
-                                            }
-                                            </td>
-                                        </tr>
+                    <div className='row table-content'>
+                        <div className="row mt-3 text-dark">
+                            <h5 className='mb-3 ms-2'>All Assignments</h5>
+                            <div className="scroll-container">
+                                {assignments.length === 0 ? (
+                                    <p>There is no assignments</p>
+                                ) : (
+                                    assignments.map((assignment) => (
+                                        <div className="card course-card mx-2" style={{ width: '20rem', height: "30rem" }} key={assignment._id}>
+                                            <img src="/banner9.jpg" className="card-img-top" alt="..." style={{ height: '200px', objectFit: 'cover', borderRadius: "15px" }} />
+                                            <div className="card-body text-center">
+                                                <h5 className="card-title">{assignment.title}</h5>
+                                                <h6>{assignment.course}</h6>
+                                                <small className="card-text">{assignment.description}</small>
+                                            </div>
+                                            <div className='text-center'>
+                                                {
+                                                    assignment.submissions && Array.isArray(assignment.submissions) &&
+                                                        !assignment.submissions.some(submission => submission.student.toString() === user.id.toString()) ? (
+                                                        <>
+                                                            <button
+                                                                className="btn button mb-4"
+                                                                style={{ width: "100px" }}
+                                                                onClick={() => handleFileUploadClick(assignment._id)}
+                                                            >
+                                                                Upload
+                                                            </button>
+                                                            <input
+                                                                type="file"
+                                                                accept=".pdf,.mp4"
+                                                                style={{ display: "none" }}
+                                                                ref={(el) => (fileInputRefs.current[assignment._id] = el)}
+                                                                onChange={(e) => handleFileChange(e, assignment._id)}
+                                                            />
+                                                        </>
+                                                    ) : (
+                                                        <h6 className='mb-5' style={{ color: "#28A804" }}>Submitted!</h6>
+                                                    )
+                                                }
+                                            </div>
+                                        </div>
                                     ))
-                                }
-                            </tbody>
-                        </table>
-                        <nav>
-                            <ul className="pagination">
-                                {Array.from({ length: Math.ceil(filteredUsers.length / usersPerPage) }, (_, i) => (
-                                    <li key={i + 1} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}>
-                                        <a onClick={() => paginate(i + 1)} className="page-link">
-                                            {i + 1}
-                                        </a>
-                                    </li>
-                                ))}
-                            </ul>
-                        </nav>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+            {showToast && (
+                <div className="toast show position-fixed  bottom-0 end-0 m-3" style={{ borderRadius: "15px", backgroundColor: "#0056b3", color: "white" }}>
+                    <div className="toast-body">
+                        {message}
+                        <button type="button" className="btn-close ms-2 mb-1" onClick={() => setShowToast(false)}></button>
+                    </div>
+                </div>
+            )}
         </>
-    )
+    );
 }
 
-export default AdminStudents
+export default StudentAllAssignments;
+

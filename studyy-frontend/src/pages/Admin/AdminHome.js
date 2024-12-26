@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -14,7 +15,7 @@ const apiClient = axios.create({
 
 function AdminHome() {
     const navigate = useNavigate()
-    // const email = location.state?.user.email
+    const { user,token } = useUser();
     const [users, setUsers] = useState([])
     const [filteredUsers, setFilteredUsers] = useState([])
     const [searchEmail, setSearchEmail] = useState('')
@@ -27,12 +28,18 @@ function AdminHome() {
     const [showToast, setShowToast] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [isBlocking, setIsBlocking] = useState(false);
+
+    if (!user || token) {
+        navigate('/');
+        return;
+    }
+    
     useEffect(() => {
         const getUsers = async () => {
             try {
                 const response = await apiClient.get('/user/get-users', {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
 
@@ -89,7 +96,7 @@ function AdminHome() {
         try {
             const response = await apiClient.delete(`/user/admin-delete-user/${selectedUser._id}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -113,7 +120,7 @@ function AdminHome() {
         try {
             const response = await apiClient.put(`/user/admin-block-user/${selectedUser._id}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

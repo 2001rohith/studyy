@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
+import io from 'socket.io-client'
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -10,24 +12,26 @@ const apiClient = axios.create({
         'Accept': 'application/json',
     },
 });
+const socket = io(`${API_URL}`);
 
 const TeacherEditQuiz = () => {
     const location = useLocation();
     const navigate = useNavigate();
-
+    const { user,token } = useUser();
+    const [teacherId, setTeacherId] = useState(user.id)
     const quizId = location.state?.quiz._id;
     const courseId = location.state?.courseId;
     const [quizTitle, setQuizTitle] = useState('');
     const [questions, setQuestions] = useState([{ question: '', options: ['', ''], answer: '' }]);
     const [message, setMessage] = useState('Loading quiz details...');
-
+    const [showToast, setShowToast] = useState(false)
     useEffect(() => {
         const fetchQuizDetails = async () => {
             try {
 
                 const response = await apiClient.get(`/course/get-quiz/${quizId}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
 
@@ -82,19 +86,27 @@ const TeacherEditQuiz = () => {
             return;
         }
 
-        const quizData = { title: trimmedTitle, questions };
+        const quizData = { title: trimmedTitle, questions, courseId, teacherId };
 
         try {
-            
-            const response = await apiClient.put(`/course/teacher-edit-quiz/${quizId}`,quizData, {
+
+            const response = await apiClient.put(`/course/teacher-edit-quiz/${quizId}`, quizData, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
             const data = response.data;
             if (response.status === 200) {
                 setMessage("Quiz updated successfully!");
+                setShowToast(true)
+                setTimeout(() => {
+                    navigate("/teacher-view-quizzes", { state: { id: courseId }, replace: true })
+                }, 1000);
+                socket.emit('notificationAdded', {
+                    courseId: courseId,
+                    teacherId: user.id,
+                });
             } else {
                 setMessage(data.message || "Error occurred while updating the quiz.");
             }
@@ -104,9 +116,9 @@ const TeacherEditQuiz = () => {
         }
     };
 
-    const goback = async () => {
-        navigate("/teacher-view-quizzes", { state: { id: courseId } });
-    };
+    // const goback = async () => {
+    //     navigate("/teacher-view-quizzes", { state: { id: courseId } });
+    // };
 
     return (
         <>
@@ -122,23 +134,9 @@ const TeacherEditQuiz = () => {
                     <div className="row add-course-forms table-content">
                         <div className="col-md-6 text-dark first-form">
                             <h5 className="mb-5">Edit Quiz</h5>
-                            {message && <div className="modal fade" id="exampleModal" tabIndex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                <div className="modal-dialog">
-                                    <div className="modal-content">
-                                        <div className="modal-header">
-                                            <h5 className="modal-title" id="exampleModalLabel">Alert!</h5>
-                                            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div className="modal-body">
-                                            {message}
-                                        </div>
-                                        <div className="modal-footer">
-                                            <button type="button" onClick={goback} className="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>}
                             <form onSubmit={handleSubmit}>
+                                {message}
+                                <label>Title:</label>
                                 <input
                                     className="form-control mb-3"
                                     type="text"
@@ -161,6 +159,7 @@ const TeacherEditQuiz = () => {
                                                 onChange={(e) => handleQuestionChange(index, 'question', e.target.value)}
                                                 required
                                             />
+                                            <label>Options:</label>
                                             <input
                                                 className="form-control mb-2"
                                                 type="text"
@@ -177,6 +176,7 @@ const TeacherEditQuiz = () => {
                                                 onChange={(e) => handleQuestionChange(index, 'option2', e.target.value)}
                                                 required
                                             />
+                                            <label>Answer:</label>
                                             <input
                                                 className="form-control mb-2"
                                                 type="text"
@@ -195,14 +195,23 @@ const TeacherEditQuiz = () => {
                                     ))
                                 )}
 
-                                <button className="btn table-button" type="submit" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                                <button className="btn table-button" type="submit">
                                     Save Changes
                                 </button>
                             </form>
                         </div>
                     </div>
                 </div>
+                {showToast && (
+                    <div className="toast show position-fixed  bottom-0 end-0 m-3" style={{ borderRadius: "15px", backgroundColor: "#0056b3", color: "white" }}>
+                        <div className="toast-body">
+                            {message}
+                            <button type="button" className="btn-close ms-2 mb-1" onClick={() => setShowToast(false)}></button>
+                        </div>
+                    </div>
+                )}
             </div>
+
         </>
     );
 };

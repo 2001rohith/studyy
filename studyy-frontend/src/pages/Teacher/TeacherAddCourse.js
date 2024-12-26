@@ -3,6 +3,7 @@ import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -14,13 +15,15 @@ const apiClient = axios.create({
 const TeacherAddCourse = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const userId = location.state?.user.id;
+    const { user, token } = useUser();
+
+    const userId = user.id;
 
     // Course-related states
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [message, setMessage] = useState('Fill Fields!');
-    const [courseId, setCourseId] = useState(null);  // Store course ID after creation
+    const [courseId, setCourseId] = useState(null);
 
     // Module-related states
     const [moduleTitle, setModuleTitle] = useState('');
@@ -43,7 +46,7 @@ const TeacherAddCourse = () => {
 
             const response = await apiClient.post(`/course/create`, { title: trimmedTitle, description: trimmedDescription, userId }, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -51,12 +54,12 @@ const TeacherAddCourse = () => {
             if (response.status === 200) {
                 setMessage("Course created successfully.");
                 setCourseId(data.course._id)
-            } else {
-                setMessage(data.message);
-            }
+            } 
         } catch (error) {
+            if (error.response) {
+                setMessage(error.response.data.message || "An error occurred");
+            }
             console.error('Error creating course:', error);
-            setMessage("Error occurred while creating the course.");
         }
     };
 
@@ -77,10 +80,10 @@ const TeacherAddCourse = () => {
 
 
         try {
-            
-            const response = await apiClient.post(`/course/teacher-add-module`,formData, {
+
+            const response = await apiClient.post(`/course/teacher-add-module`, formData, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

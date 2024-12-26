@@ -26,7 +26,7 @@ function ResetPassword() {
             });
 
             const data = response.data;
-            if (data.status === "ok") {
+            if (response.status === 200) {
                 setMessage(data.message);
                 alert(data.message);
             } else {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import StudentSidebar from '../components/StudentSidebar';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -14,21 +15,24 @@ const apiClient = axios.create({
 
 function StudentClasses() {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem('user'));
+    // const user = JSON.parse(localStorage.getItem('user'));
+    const { user,token } = useUser();
     const [loading, setLoading] = useState(true);
     const [classes, setClasses] = useState([]);
     const [error, setError] = useState("");
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("")
 
-
     useEffect(() => {
+        if (!user) {
+            navigate('/');
+            return;
+        }
         const getClasses = async () => {
             try {
-                
                 const response = await apiClient.get(`/course/student-get-classes/${user.id}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
 

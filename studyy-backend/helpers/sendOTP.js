@@ -31,4 +31,4 @@ const sendOTP = async (email) => {
   }
 };
 
-module.exports = sendOTP;
+// module.exports = sendOTP;

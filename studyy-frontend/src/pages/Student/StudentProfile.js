@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import StudentSidebar from '../components/StudentSidebar'
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -13,35 +14,34 @@ const apiClient = axios.create({
 });
 
 function StudentProfile() {
+    const { user, updateUser,token } = useUser();
     const navigate = useNavigate()
-    // const location = useLocation()
-    const User = JSON.parse(localStorage.getItem('user'));
-    console.log("user from localstorage:", User)
-    const [userId, setUserId] = useState(User.id)
+    // const User = JSON.parse(localStorage.getItem('user'));
+    const [userId, setUserId] = useState(user.id)
     console.log("user id:", userId)
-    const [user, setUser] = useState()
     const [loading, setLoading] = useState(true)
     const [currentPassword, setCurrentPassword] = useState("")
     const [newPassword, setNewPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
     const [name, setName] = useState("")
-    const [email, setEmail] = useState("")
+    // const [email, setEmail] = useState("")
     const [message, setMessage] = useState('')
     const [showPasswordModal, setShowPasswordModal] = useState(false)
     const [showEditModal, setShowEditModal] = useState(false)
     const [newCourses, setNewCourses] = useState([])
     const [error, setError] = useState(null)
+    const [userData,setUserdata] = useState()
 
     const getProfileData = async () => {
         try {
             const response = await apiClient.get(`/user/get-profile-data/${userId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             })
             const data = response.data;
             if (response.status === 200) {
-                setUser(data.user)
+                setUserdata(data.user)
                 setLoading(false)
             }
         } catch (error) {
@@ -62,12 +62,12 @@ function StudentProfile() {
         }
         try {
 
-            const response = await apiClient.post(`/user/change-password/${user._id}`, {
+            const response = await apiClient.post(`/user/change-password/${user.id}`, {
                 currentPassword,
                 newPassword,
             }, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -90,10 +90,9 @@ function StudentProfile() {
 
     const editProfile = async (e) => {
         e.preventDefault()
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         const trimmedName = name.trim();
-        const trimmedEmail = email.trim();
+
         try {
             if (!trimmedName) {
                 setMessage("Enter the name")
@@ -103,40 +102,26 @@ function StudentProfile() {
                 setMessage("Too short for name")
                 return
             }
-            if (!trimmedEmail) {
-                setMessage("Enter the name")
-                return
-            }
-            if (trimmedEmail.length < 2) {
-                setMessage("Too short for email")
-                return
-            }
-            if (!emailRegex.test(trimmedEmail)) {
-                setMessage("This is not a email")
-                return
-            }
 
-            const response = await apiClient.put(`/user/edit-profile/${user._id}`, {
+            const response = await apiClient.put(`/user/edit-profile/${user.id}`, {
                 name,
-                email,
             }, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
             const data = response.data;
             setMessage(data.message)
             if (response.status === 200) {
-                localStorage.setItem('user', JSON.stringify(data.user));
+                updateUser(data.user);
                 setName("")
-                setEmail("")
                 setTimeout(() => {
                     getProfileData()
                     closeEditModal()
                 }, 1000)
             } else {
-                setMessage(data.message || 'Password change failed.');
+                setMessage(data.message );
             }
         } catch (error) {
             setMessage('Server error. Please try again later.');
@@ -146,7 +131,7 @@ function StudentProfile() {
     const setModal = () => setShowPasswordModal(!showPasswordModal)
     const setEditModal = () => {
         setName(user.name)
-        setEmail(user.email)
+        // setEmail(user.email)
         setShowEditModal(!showEditModal)
     }
     const closeModal = () => {
@@ -159,7 +144,7 @@ function StudentProfile() {
     const closeEditModal = () => {
         setShowEditModal(!showEditModal)
         setName('');
-        setEmail('');
+        // setEmail('');
         setMessage("")
     }
 
@@ -167,7 +152,7 @@ function StudentProfile() {
         try {
             const response = await apiClient.get(`/course/enrolled-courses/${userId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -224,7 +209,7 @@ function StudentProfile() {
                         </div>
                         <div className="row mt-3 text-dark profile-course">
                             <h5 className='mb-2 mt-2'>Enrolled Courses</h5>
-                            {newCourses.length === 0 ? (
+                            {!newCourses ? (
                                 <p>You have no enrolled courses</p>
                             ) : (
                                 newCourses.map((course) => (
@@ -314,16 +299,6 @@ function StudentProfile() {
                                             className="form-control"
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group mb-3">
-                                        <label>Change email</label>
-                                        <input
-                                            type="email"
-                                            className="form-control"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
                                             required
                                         />
                                     </div>

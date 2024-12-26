@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import StudentSidebar from '../components/StudentSidebar';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -14,18 +15,21 @@ const apiClient = axios.create({
 
 function StudentAllQuizzes() {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem('user'));
+    const { user,token } = useUser();
     const [loading, setLoading] = useState(true)
     const [quizzes, setQuizzes] = useState([]);
     // const toastRef = useRef(null);
 
     useEffect(() => {
         const getQuizzes = async () => {
+            if (!user) {
+                navigate('/');
+                return;
+            }
             try {
-               
                 const response = await apiClient.get(`/course/student-get-quizzes/${user.id}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
 
@@ -89,7 +93,7 @@ function StudentAllQuizzes() {
                                                         </button>
                                                     ) : (
                                                         <>
-                                                            <h5 style={{ color: "#9C09FF" }}>Score {quiz.score}</h5>
+                                                            <h5 style={{ color: "#9C09FF" }}>Score {quiz.score}/{quiz.numberOfQuestions}</h5>
                                                             <h6 className='mb-4' style={{ color: "#28A804" }}>Submitted!</h6>
                                                         </>
                                                     )

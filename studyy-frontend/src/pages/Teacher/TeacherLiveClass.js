@@ -6,6 +6,8 @@ import '../css/TeacherLiveClass.css';
 import io from 'socket.io-client';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
+
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -18,6 +20,7 @@ const apiClient = axios.create({
 const socket = io(`${API_URL}`);
 
 function TeacherLiveClass() {
+    const { user,token } = useUser();
     const [peerId, setPeerId] = useState('');
     const [isMuted, setIsMuted] = useState(false);
     const [isCameraOff, setIsCameraOff] = useState(false);
@@ -63,7 +66,7 @@ function TeacherLiveClass() {
 
             const response = await apiClient.put(`/course/add-peerid/${classId}`, { peerId: Id }, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -191,7 +194,7 @@ function TeacherLiveClass() {
             
             const response = await apiClient.put(`/course/update-class-status/${classId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

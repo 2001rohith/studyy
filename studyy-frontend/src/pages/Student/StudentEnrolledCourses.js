@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import StudentSidebar from '../components/StudentSidebar';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -14,22 +15,28 @@ const apiClient = axios.create({
 
 function StudentEnrolledCourses() {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user'));
+  const { user,token } = useUser();
   const [loading, setLoading] = useState(true);
   const [newCourses, setNewCourses] = useState([]);
+  console.log("user from enrolled course:", user)
 
   useEffect(() => {
     const fetchEnrolledCourses = async () => {
+      if (!user) {
+        navigate('/');
+        return;
+      }
       try {
-        
+
         const response = await apiClient.get(`/course/enrolled-courses/${user.id}`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
           },
         });
 
         const data = response.data;
-        setNewCourses(data.courses || []); 
+        console.log("data from enrolled course:", data)
+        setNewCourses(data.courses);
         setLoading(false);
       } catch (error) {
         console.log('Error in fetching courses:', error);
@@ -65,7 +72,7 @@ function StudentEnrolledCourses() {
             <div className="row mt-3 text-dark">
               <h5 className="mb-3">Enrolled Courses</h5>
               <div className="scroll-container">
-                {newCourses.length > 0 ? (
+                {newCourses ? (
                   newCourses.map((course) => (
                     <div
                       className="card course-card mx-2"

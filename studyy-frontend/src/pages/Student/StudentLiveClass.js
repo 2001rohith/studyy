@@ -6,6 +6,7 @@ import '../css/TeacherLiveClass.css';
 import io from 'socket.io-client';
 // import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 // const apiClient = axios.create({
 //   baseURL: API_URL,
@@ -18,7 +19,7 @@ import API_URL from '../../axiourl';
 const socket = io(`${API_URL}`);
 
 function StudentLiveClass() {
-    const user = JSON.parse(localStorage.getItem("user"))
+    const { user,token } = useUser();
     const [peerId, setPeerId] = useState('');
     const [isMuted, setIsMuted] = useState(false);
     const [isCameraOff, setIsCameraOff] = useState(false);

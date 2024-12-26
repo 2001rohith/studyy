@@ -4,6 +4,7 @@ import TeacherSidebar from '../components/TeacherSidebar'
 import io from 'socket.io-client'
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -17,7 +18,7 @@ const socket = io(`${API_URL}`);
 
 function TeacherCourses() {
   const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem('user'));
+  const { user,token } = useUser();
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -33,15 +34,19 @@ function TeacherCourses() {
   const [students, setStudents] = useState([]);
   const [modal, setModal] = useState(false);
   const [emailModal, setEmailModal] = useState(false)
-  console.log("token from teacher home before:", localStorage.getItem('token'))
   console.log("user from local storage:", user)
+
+  if (!user) {
+    navigate('/');
+    return;
+}
 
   const getCourses = async () => {
     try {
 
       const response = await apiClient.get(`/course/get-courses`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -80,7 +85,7 @@ function TeacherCourses() {
 
       const response = await apiClient.delete(`/course/teacher-delete-course/${selectedCourse}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -120,7 +125,7 @@ function TeacherCourses() {
         userId: user.id
       }, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -157,7 +162,7 @@ function TeacherCourses() {
         courseId: selectedCourse,
       }, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -209,7 +214,7 @@ function TeacherCourses() {
       
       const response = await apiClient.get(`/course/get-course-students/${id}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 

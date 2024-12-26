@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import io from "socket.io-client"
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -23,7 +24,7 @@ function StudentSidebar() {
     const [loading, setLoading] = useState(false);
     const [hasUnread, setHasUnread] = useState(false);
 
-    const user = JSON.parse(localStorage.getItem('user'));
+    const { user, logout,token} = useUser();
 
     useEffect(() => {
         socket.emit('joinStudent', { studentId: user.id });
@@ -46,7 +47,7 @@ function StudentSidebar() {
             setLoading(true);
             const response = await apiClient.get(`/course/get-notifications/${user.id}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -72,13 +73,13 @@ function StudentSidebar() {
                 .map((notification) => notification._id);
 
             if (unreadIds.length > 0) {
-                
+
                 const response = await apiClient.post(`/course/mark-notifications-as-read`, {
                     notificationIds: unreadIds,
                     studentId: user.id
                 }, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
 
@@ -107,9 +108,14 @@ function StudentSidebar() {
     }
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        // localStorage.removeItem('token');
+        // localStorage.removeItem('user');
+        logout()
         navigate("/", { replace: true });
+        window.history.pushState(null, '', '/login');
+        window.onpopstate = function(event) {
+            window.history.pushState(null, '', '/login');
+        };
     };
 
     useEffect(() => {
@@ -166,7 +172,7 @@ function StudentSidebar() {
                                 ></button>
                             </div>
                             <div
-                                className="modal-body noti-body"
+                                className="modal-body assignment-body"
                                 style={{ maxHeight: '400px', overflowY: 'auto' }}
                             >
                                 {loading ? (

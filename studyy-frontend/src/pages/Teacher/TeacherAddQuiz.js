@@ -3,6 +3,7 @@ import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -12,6 +13,7 @@ const apiClient = axios.create({
 });
 
 const TeacherAddQuiz = () => {
+    const { user,token } = useUser();
     const location = useLocation();
     const navigate = useNavigate();
     const cId = location.state?.id;
@@ -60,7 +62,7 @@ const TeacherAddQuiz = () => {
             
             const response = await apiClient.post(`/course/add-quiz`, quizData, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

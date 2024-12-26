@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar2 from '../components/Sidebar2';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -14,6 +15,7 @@ const apiClient = axios.create({
 
 function AdminTeachers() {
     const navigate = useNavigate();
+    const { user,token } = useUser();
     const [users, setUsers] = useState([]);
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [searchEmail, setSearchEmail] = useState('');
@@ -27,12 +29,17 @@ function AdminTeachers() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    if (!user || token) {
+        navigate('/');
+        return;
+    }
+
     useEffect(() => {
         const getTeachers = async () => {
             try {
                 const response = await apiClient.get('/user/get-teachers', {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
 
@@ -95,7 +102,7 @@ function AdminTeachers() {
 
             const response = await apiClient.put(`/user/admin-verify-teacher/${userId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

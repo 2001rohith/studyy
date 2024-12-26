@@ -1,5 +1,5 @@
 const User = require("../models/userModel")
-const Course = require("..//models/courseModel")
+const Course = require("../models/courseModel")
 const Module = require("../models/moduleModel")
 
 
@@ -9,7 +9,7 @@ exports.homeCourses = async (req, res) => {
 
     try {
         const user = await User.findById(userId).populate('enrolledCourses', '_id');
-        
+        console.log("user from get home course:", user)
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -17,7 +17,7 @@ exports.homeCourses = async (req, res) => {
         const enrolledCourseIds = user.enrolledCourses.map(course => course._id);
 
         const courses = await Course.find({ _id: { $nin: enrolledCourseIds } }).sort({ createdAt: -1 });
-
+        console.log("courses:", courses)
         if (courses.length === 0) {
             return res.json({ message: "No courses available" });
         }

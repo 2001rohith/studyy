@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios';
-import API_URL from '../../axiourl'; 
+import API_URL from '../../axiourl';
 
 const apiClient = axios.create({
-    baseURL: API_URL, 
+    baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -14,6 +14,7 @@ const apiClient = axios.create({
 function SignUp() {
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
+    const [phone, setPhone] = useState("")
     const [password, SetPassword] = useState('')
     const [message, setMessage] = useState('')
     const navigate = useNavigate()
@@ -25,11 +26,12 @@ function SignUp() {
         console.log("password:", password)
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
+        const phoneRegex = /^[6-9]\d{9}$/;
 
         const trimmedName = name.trim();
         const trimmedEmail = email.trim();
         const trimmedPassword = password.trim();
-
+        const trimmedPhone = phone.trim()
 
         try {
             if (!trimmedName) {
@@ -56,10 +58,15 @@ function SignUp() {
                 setMessage("Password must be at least 6 characters long, contain at least 1 uppercase letter, 1 lowercase letter, and 1 number")
                 return
             }
+            if (!phoneRegex.test(trimmedPhone)) {
+                setMessage("Phone number is not valid")
+                return
+            }
 
             const response = await apiClient.post('/user/signup', {
                 name: trimmedName,
                 email: trimmedEmail,
+                phone: trimmedPhone,
                 password: trimmedPassword,
             });
 
@@ -67,8 +74,8 @@ function SignUp() {
             setMessage(data.message)
             console.log("status :", data.status)
             console.log("message :", data.message)
-            if (data.status === "ok") {
-                navigate("/otp", { state: { email } })
+            if (response.status === 200) {
+                navigate("/otp", { state: { trimmedPhone,trimmedEmail } })
             }
 
             console.log("signup-response", data);
@@ -80,19 +87,20 @@ function SignUp() {
     const googleAuth = () => {
         window.location.href = `${API_URL}/user/auth/google`;
     };
-    
+
     return (
         <>
             <div className='wrapper'>
                 <div className='container login-boxx'>
                     <div className='login-items'>
                         <h2 className="login-title">studyy</h2>
-                        <h5 className='heading'>Get started!</h5>                        
+                        <h5 className='heading'>Get started!</h5>
                         <div className='input'>
                             <h6 className='warning-text text-center'>{message}</h6>
                             <form className='form'>
                                 <input className='form-control text-start text-dark' onChange={(e) => setName(e.target.value)} type="text" name='name' placeholder='Enter Name' />
                                 <input className='form-control text-start text-dark' onChange={(e) => setEmail(e.target.value)} type="email" name='email' placeholder='Enter Email' />
+                                <input className='form-control text-start text-dark' onChange={(e) => setPhone(e.target.value)} type="number" name='phone' placeholder='Enter Phone number' />
                                 <input className='form-control text-dark' onChange={(e) => SetPassword(e.target.value)} type="password" name='password' placeholder='Enter Password' />
                                 <button className='btn btn-primary sign-in-button my-1' onClick={handlesubmit}>Sign Up</button>
                             </form>

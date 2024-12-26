@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useUser } from "../../UserContext"
 
 function TeacherSidebar() {
     const navigate = useNavigate();
     const [showModal, setShowModal] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const { user, logout } = useUser();
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
@@ -15,9 +17,14 @@ function TeacherSidebar() {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        // localStorage.removeItem('token');
+        // localStorage.removeItem('user');
+        logout()
         navigate("/", { replace: true });
+        window.history.pushState(null, '', '/login');
+        window.onpopstate = function(event) {
+            window.history.pushState(null, '', '/login');
+        };
     };
 
     return (

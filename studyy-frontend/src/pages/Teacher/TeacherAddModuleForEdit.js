@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import TeacherSidebar from '../components/TeacherSidebar';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -17,7 +18,7 @@ function TeacherAddModuleForEdit() {
     const navigate = useNavigate();
     const courseId = location.state?.courseId;
     const course = location.state?.course;
-
+    const { user,token } = useUser();
     const [showToast, setShowToast] = useState(false)
     const [message, setMessage] = useState("")
     const [title, setTitle] = useState('');
@@ -49,7 +50,7 @@ function TeacherAddModuleForEdit() {
             
             const response = await apiClient.post(`/course/teacher-add-module`, formData, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

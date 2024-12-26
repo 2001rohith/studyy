@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import TeacherSidebar from '../components/TeacherSidebar';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -16,6 +17,7 @@ function TeacherQuizzes() {
     const navigate = useNavigate();
     const location = useLocation();
     const cId = location.state?.id;
+    const { user,token } = useUser();
     const [courseId] = useState(cId);
     console.log("course id from all course Quiz", courseId)
     const [quizzes, setQuizzes] = useState([]);
@@ -29,6 +31,10 @@ function TeacherQuizzes() {
     const [message, setMessage] = useState('');
     const [quizId, setQuizId] = useState("")
 
+    if (!user) {
+        navigate('/');
+        return;
+    }
 
     useEffect(() => {
         const getQuizzes = async () => {
@@ -36,7 +42,7 @@ function TeacherQuizzes() {
 
                 const response = await apiClient.get(`/course/get-quizzes/${courseId}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
 
@@ -75,7 +81,7 @@ function TeacherQuizzes() {
 
             const response = await apiClient.delete(`/course/teacher-delete-quiz/${quizId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -103,7 +109,7 @@ function TeacherQuizzes() {
             
             const response = await apiClient.get(`/course/get-quiz-submissions/${quizId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 

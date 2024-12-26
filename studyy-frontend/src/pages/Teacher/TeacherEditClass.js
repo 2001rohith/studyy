@@ -3,6 +3,7 @@ import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -18,7 +19,7 @@ const TeacherEditClass = () => {
     const ClassReceived = location.state?.Class
     const [Class, SetClass] = useState(ClassReceived)
     const courseId = location.state?.courseId
-    const user = JSON.parse(localStorage.getItem('user'));
+    const { user,token } = useUser();
     const [message, setMessage] = useState("");
     const [title, setTitle] = useState(Class.title || '');
     const [date, setDate] = useState(Class.date || '');
@@ -61,7 +62,7 @@ const TeacherEditClass = () => {
                 status
             }, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
@@ -112,7 +113,7 @@ const TeacherEditClass = () => {
                                         type="date"
                                         value={date}
                                         onChange={(e) => setDate(e.target.value)}
-                                        required
+                                        
                                     />
                                     <small className="form-check-label ms-2">Time:</small>
                                     <input
@@ -120,7 +121,7 @@ const TeacherEditClass = () => {
                                         className="form-control"
                                         value={time}
                                         onChange={(e) => setTime(e.target.value)}
-                                        required
+                                        
                                     />
                                     <small className="form-check-label ms-2">Duration (minutes):</small>
                                     <input
@@ -129,7 +130,7 @@ const TeacherEditClass = () => {
                                         className="form-control"
                                         value={duration}
                                         onChange={(e) => setDuration(e.target.value)}
-                                        required
+                                        
                                     />
                                 </div>
                                 <div className="dropdown">

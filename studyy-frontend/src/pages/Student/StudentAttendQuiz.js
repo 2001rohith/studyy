@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import StudentSidebar from '../components/StudentSidebar';
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -21,7 +22,12 @@ function StudentAttendQuiz() {
   const location = useLocation();
 
   const quiz = location.state?.quiz;
-  const user = useMemo(() => JSON.parse(localStorage.getItem('user')), []);
+  const { user,token } = useUser();
+
+  if (!user) {
+    navigate('/');
+    return;
+}
 
   useEffect(() => {
     if (quiz) {
@@ -81,7 +87,7 @@ function StudentAttendQuiz() {
     try {
       const response = await apiClient.post(`/course/student-submit-quiz`, submissionData,{
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 

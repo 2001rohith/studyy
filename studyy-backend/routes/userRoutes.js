@@ -43,6 +43,6 @@ router.post('/reset-password/:token', resetPassword);
 router.get("/get-students", getStudents)
 router.post('/change-password/:id', UserChangePassword);
 router.put("/edit-profile/:id",editProfile )
-router.get("/get-profile-data/:id",getProfieData)
+router.get("/get-profile-data/:id",authMiddleware,getProfieData)
 
 module.exports = router

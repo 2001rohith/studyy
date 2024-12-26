@@ -631,6 +631,16 @@ input:is(:focus,:valid)~label{
   padding-bottom: 80px;
 }
 
+.student-assignment-banner {
+  /* background-color: #5fa2f4; */
+  background-image: url("/public/banner9.jpg");
+  width: 465px;
+  color: #000;
+  padding-top: 40px;
+  padding-left: 10px;
+  padding-bottom: 25px;
+}
+
 .admin-banner {
   background-image: url("/public/banner1.webp");
   /* background-color: #507687; */
@@ -943,6 +953,9 @@ input:is(:focus,:valid)~label{
 .noti-body {
   height: 550px;
 }
+/* .assignment-body {
+  width: 650px;
+} */
 
 .red-dot {
   position: absolute;

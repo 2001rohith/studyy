@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import TeacherSidebar from '../components/TeacherSidebar'
 import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useUser } from "../../UserContext"
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -16,7 +17,7 @@ function TeacherViewCourse() {
     const navigate = useNavigate()
     const location = useLocation()
     const courseId = location.state?.id
-    const user = JSON.parse(localStorage.getItem('user'));
+    const { user,token } = useUser();
     const [course, setCourse] = useState()
     const [loading, setLoading] = useState(true)
     const [modules, setModules] = useState()
@@ -28,7 +29,11 @@ function TeacherViewCourse() {
     const [showToast, setShowToast] = useState(false)
     const [message, setMessage] = useState('');
 
-    console.log("course id", courseId)
+    if (!user) {
+        navigate('/');
+        return;
+    }
+
     useEffect(() => {
         const getCourse = async () => {
             console.log("course id again", courseId)
@@ -37,7 +42,7 @@ function TeacherViewCourse() {
 
                 const response = await apiClient.get(`/course/get-course/${courseId}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
 
@@ -64,7 +69,7 @@ function TeacherViewCourse() {
             
             const response = await apiClient.delete(`/course/teacher-delete-module/${moduleId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
