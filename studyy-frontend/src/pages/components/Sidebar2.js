@@ -7,17 +7,23 @@ function Sidebar() {
     const [showModal, setShowModal] = useState(false)
     const { user, logout } = useUser();
 
-    const showConfirmation = () => {
-        setShowModal(true)
-    }
+    // const showConfirmation = () => {
+    //     setShowModal(true)
+    // }
 
-    const handleLogout = () => {
-        logout()
-        navigate("/", { replace: true });
-        window.history.pushState(null, '', '/');
-        window.onpopstate = function (event) {
-            window.history.pushState(null, '', '/');
-        }
+    // const handleLogout = () => {
+    //     logout()
+    //     navigate("/", { replace: true });
+    //     window.history.pushState(null, '', '/');
+    //     window.onpopstate = function (event) {
+    //         window.history.pushState(null, '', '/');
+    //     }
+    //     window.location.reload();
+    // }
+    const handleLogout = async () => {
+        await logout();
+        window.localStorage.clear();
+        navigate('/', { replace: true });
         window.location.reload();
     }
 
@@ -42,7 +48,7 @@ function Sidebar() {
                 </li>
             </ul>
             <div className="sidebar-footer1 ms-3">
-                <span onClick={showConfirmation} className="logout-link text-light mt-1" style={{ cursor: 'pointer' }}>Log out</span>
+                <span onClick={()=>setShowModal(true)} className="logout-link text-light mt-1" style={{ cursor: 'pointer' }}>Log out</span>
             </div>
             {showModal && (
                 <div className="modal show d-block" tabIndex="-1">
