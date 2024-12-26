@@ -108,8 +108,6 @@ function StudentSidebar() {
     }
 
     const handleLogout = () => {
-        // localStorage.removeItem('token');
-        // localStorage.removeItem('user');
         logout()
         navigate("/", { replace: true });
         window.history.pushState(null, '', '/');

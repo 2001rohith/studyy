@@ -15,9 +15,10 @@ function Sidebar() {
         logout()
         navigate("/", { replace: true });
         window.history.pushState(null, '', '/');
-        window.onpopstate = function(event) {
+        window.onpopstate = function (event) {
             window.history.pushState(null, '', '/');
         }
+        window.location.reload();
     }
 
     return (
