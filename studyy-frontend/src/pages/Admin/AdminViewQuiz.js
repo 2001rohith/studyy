@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useLocation } from 'react-router-dom';
 import Sidebar2 from '../components/Sidebar2';
 import { useUser } from "../../UserContext"
 
