@@ -22,7 +22,7 @@ function StudentAllAssignments() {
     const [showToast, setShowToast] = useState(false)
     const [message, setMessage] = useState("")
 
-    if (!user || token) {
+    if (!user || !token) {
         navigate('/');
         return;
     }

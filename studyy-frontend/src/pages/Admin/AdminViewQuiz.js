@@ -10,7 +10,7 @@ function AdminViewQuiz() {
     const { user, token } = useUser();
     console.log("quiz from admin view quiz:", quiz)
 
-    if (!user || token) {
+    if (!user || !token) {
         navigate('/');
         return;
     }

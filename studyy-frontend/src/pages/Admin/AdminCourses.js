@@ -52,7 +52,7 @@ function AdminCourses() {
   };
 
   useEffect(() => {
-    if (!user || token) {
+    if (!user || !token) {
       navigate('/');
       return;
     }

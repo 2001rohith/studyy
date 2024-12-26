@@ -28,8 +28,8 @@ router.get("/auth/google/callback", passport.authenticate("google",{session:fals
 })
 router.post("/select-role",upload.single("certificate"),authMiddleware,selectRole)
 
-router.get("/get-users",isAdmin,getUsers)
-router.get("/get-teachers",isAdmin,getTeachers)
+router.get("/get-users",getUsers)
+router.get("/get-teachers",getTeachers)
 
 router.put("/admin-update-user/:id",UpdateUser )
 router.delete("/admin-delete-user/:id",DeleteUser)

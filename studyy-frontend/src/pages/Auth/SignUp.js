@@ -93,7 +93,7 @@ function SignUp() {
             <div className='wrapper'>
                 <div className='container login-boxx'>
                     <div className='login-items'>
-                        <h2 className="login-title">studyy</h2>
+                        <h2 className="login-title">Studyy</h2>
                         <h5 className='heading'>Get started!</h5>
                         <div className='input'>
                             <h6 className='warning-text text-center'>{message}</h6>

@@ -27,7 +27,7 @@ function AdminViewCourse() {
     console.log("course id", courseId)
 
     useEffect(() => {
-        if (!user || token) {
+        if (!user || !token) {
             navigate('/');
             return;
         }
