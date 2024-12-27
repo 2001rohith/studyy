@@ -20,11 +20,11 @@ function Sidebar() {
     //     }
     //     window.location.reload();
     // }
-    const handleLogout = async () => {
-        await logout();
+    const handleLogout = () => {
+        logout();
         window.localStorage.clear();
-        navigate('/', { replace: true });
-        window.location.reload();
+        window.history.pushState(null, '', '/');
+        window.location.replace('/');
     }
 
     return (
