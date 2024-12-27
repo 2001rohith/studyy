@@ -31,6 +31,8 @@ const TeacherAddCourse = () => {
     const [moduleFile, setModuleFile] = useState(null);
     const [moduleVideoFile, setModuleVideoFile] = useState(null)
 
+
+    
     // Handle course creation
     const handleCourseSubmit = async (e) => {
         e.preventDefault();

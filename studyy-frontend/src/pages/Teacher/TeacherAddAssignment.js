@@ -27,10 +27,12 @@ const TeacherAddAssignment = () => {
     const [deadlineDate, setDeadlineDate] = useState('');
     const [message, setMessage] = useState('Fill Fields!');
 
-    if (!user) {
-        navigate('/');
-        return;
-    }
+    useEffect(() => {
+        if (!user|| !token) {
+          navigate('/');
+          return;
+        }
+      },[])
 
     const handleSubmit = async (e) => {
         e.preventDefault();

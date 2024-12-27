@@ -10,11 +10,12 @@ function TeacherHome() {
   const { user,token } = useUser();
   console.log("teacher peerid:", user)
 
-  if (!user || !token) {
-    navigate('/');
-    return;
-}
-
+  useEffect(() => {
+    if (!user|| !token) {
+      navigate('/');
+      return;
+    }
+  },[])
   return (
     <>
       <div className='row'>
