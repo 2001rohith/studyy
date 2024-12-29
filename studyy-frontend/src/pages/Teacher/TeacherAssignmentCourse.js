@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TeacherSidebar from '../components/TeacherSidebar'
-import axios from 'axios';
+import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
 
 function TeacherAssignmentsCourses() {
+    const apiClient = useApiClient()
     const navigate = useNavigate()
     const { user,token } = useUser();
     const [courses, setCourses] = useState([])
@@ -27,11 +21,7 @@ function TeacherAssignmentsCourses() {
     const getCourses = async () => {
         try {
             
-            const response = await apiClient.get(`/course/get-courses`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.get(`/course/get-courses`);
 
             const data = response.data;
             if (response.status === 200) {

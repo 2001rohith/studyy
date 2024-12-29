@@ -2,21 +2,15 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import TeacherSidebar from '../components/TeacherSidebar'
 import io from 'socket.io-client'
-import axios from 'axios';
+import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-});
 
 const socket = io(`${API_URL}`);
 
 function TeacherCourses() {
+  const apiClient = useApiClient()
   const navigate = useNavigate()
   const { user,token } = useUser();
   const [courses, setCourses] = useState([])
@@ -40,11 +34,7 @@ function TeacherCourses() {
   const getCourses = async () => {
     try {
 
-      const response = await apiClient.get(`/course/get-courses`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await apiClient.get(`/course/get-courses`);
 
       const data = response.data;
       if (response.status === 200) {
@@ -84,11 +74,7 @@ function TeacherCourses() {
   const handleDelete = async (id) => {
     try {
 
-      const response = await apiClient.delete(`/course/teacher-delete-course/${selectedCourse}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await apiClient.delete(`/course/teacher-delete-course/${selectedCourse}`);
 
       const data = response.data;
       if (response.status === 200) {
@@ -124,10 +110,6 @@ function TeacherCourses() {
         message: notifationMessage,
         courseId: selectedCourse,
         userId: user.id
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
       });
 
       const data = response.data;
@@ -161,10 +143,6 @@ function TeacherCourses() {
       const response = await apiClient.post(`/course/send-email-notification`, {
         message: emailMessage,
         courseId: selectedCourse,
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
       });
 
       const data = response.data;
@@ -213,11 +191,7 @@ function TeacherCourses() {
   const handleViewStudents = async (id) => {
     try {
       
-      const response = await apiClient.get(`/course/get-course-students/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await apiClient.get(`/course/get-course-students/${id}`);
 
       const data = response.data;
       if (response.status === 200) {

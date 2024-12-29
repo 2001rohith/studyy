@@ -1,27 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StudentSidebar from '../components/StudentSidebar';
-import axios from 'axios';
-import API_URL from '../../axiourl';
-import { useUser } from "../../UserContext"
-
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
+import { useApiClient } from "../../utils/apiClient";
+import { useUser } from "../../UserContext";
 
 function StudentClasses() {
+    const apiClient = useApiClient();
     const navigate = useNavigate();
-    // const user = JSON.parse(localStorage.getItem('user'));
-    const { user,token } = useUser();
+    const { user, token } = useUser();
     const [loading, setLoading] = useState(true);
     const [classes, setClasses] = useState([]);
     const [error, setError] = useState("");
     const [showToast, setShowToast] = useState(false);
-    const [toastMessage, setToastMessage] = useState("")
+    const [toastMessage, setToastMessage] = useState("");
+
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6; // Number of classes per page
+
+    // Calculate pagination details
+    const totalPages = Math.max(1, Math.ceil(classes.length / itemsPerPage));
+    const currentClasses = classes.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     useEffect(() => {
         if (!user) {
@@ -30,16 +32,11 @@ function StudentClasses() {
         }
         const getClasses = async () => {
             try {
-                const response = await apiClient.get(`/course/student-get-classes/${user.id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-
+                const response = await apiClient.get(`/course/student-get-classes/${user.id}`);
                 const data = response.data;
+
                 if (response.status === 200) {
                     setClasses(data.classes);
-                    // console.log("classes fetched:",data.classes)
                 } else {
                     setError(data.message || "Failed to fetch classes");
                 }
@@ -51,25 +48,29 @@ function StudentClasses() {
         };
 
         getClasses();
-    }, [user.id]);
+    }, [user.id, apiClient, navigate]);
 
     const HandleJoinClass = (id, peerId, status, title) => {
         if (!peerId) {
             console.error("Peer ID missing for this class");
-            return; // Prevent navigation if peerId is not available
+            return;
         }
         if (status === "Ended") {
-            setShowToast(true)
-            setToastMessage("Class Ended!")
-            return
+            setShowToast(true);
+            setToastMessage("Class Ended!");
+            return;
         }
         if (status !== "Started") {
-            setShowToast(true)
-            setToastMessage("Class Not Started!")
-            return
+            setShowToast(true);
+            setToastMessage("Class Not Started!");
+            return;
         }
-        setToastMessage("")
+        setToastMessage("");
         navigate("/join-class", { state: { classId: id, peerId, title } });
+    };
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
     };
 
     if (loading) {
@@ -102,10 +103,10 @@ function StudentClasses() {
                         <div className="row mt-3 text-dark">
                             <h5 className="mb-3">All Classes</h5>
                             <div className="scroll-container">
-                                {classes.length === 0 ? (
+                                {currentClasses.length === 0 ? (
                                     <p>No class found</p>
                                 ) : (
-                                    classes.map((Class) => (
+                                    currentClasses.map((Class) => (
                                         <div
                                             className="card course-card mx-2"
                                             style={{ width: "20rem", height: "30rem" }}
@@ -143,10 +144,25 @@ function StudentClasses() {
                             </div>
                         </div>
                     </div>
+                    {/* Pagination controls */}
+                    <div className="pagination-controls text-center mt-4">
+                        {[...Array(totalPages).keys()].map((_, index) => (
+                            <button
+                                key={index}
+                                className={`btn mx-1 ${currentPage === index + 1 ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => handlePageChange(index + 1)}
+                            >
+                                {index + 1}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
             {showToast && (
-                <div className="toast show position-fixed  bottom-0 end-0 m-3" style={{ borderRadius: "15px", backgroundColor: "#0056b3", color: "white" }}>
+                <div
+                    className="toast show position-fixed bottom-0 end-0 m-3"
+                    style={{ borderRadius: "15px", backgroundColor: "#0056b3", color: "white" }}
+                >
                     <div className="toast-body">
                         {toastMessage}
                         <button type="button" className="btn-close ms-2 mb-1" onClick={() => setShowToast(false)}></button>

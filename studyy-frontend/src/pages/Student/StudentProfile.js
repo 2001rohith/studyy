@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import StudentSidebar from '../components/StudentSidebar'
-import axios from 'axios';
-import API_URL from '../../axiourl';
+import { useApiClient } from "../../utils/apiClient"
+
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
 
 function StudentProfile() {
+    const apiClient = useApiClient()
     const { user, updateUser,token } = useUser();
     const navigate = useNavigate()
     // const User = JSON.parse(localStorage.getItem('user'));
@@ -34,11 +28,7 @@ function StudentProfile() {
 
     const getProfileData = async () => {
         try {
-            const response = await apiClient.get(`/user/get-profile-data/${userId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            })
+            const response = await apiClient.get(`/user/get-profile-data/${userId}`)
             const data = response.data;
             if (response.status === 200) {
                 setUserdata(data.user)
@@ -65,10 +55,6 @@ function StudentProfile() {
             const response = await apiClient.post(`/user/change-password/${user.id}`, {
                 currentPassword,
                 newPassword,
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
             });
 
             const data = response.data;
@@ -105,10 +91,6 @@ function StudentProfile() {
 
             const response = await apiClient.put(`/user/edit-profile/${user.id}`, {
                 name,
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
             });
 
             const data = response.data;
@@ -150,11 +132,7 @@ function StudentProfile() {
 
     const newCourse = async () => {
         try {
-            const response = await apiClient.get(`/course/enrolled-courses/${userId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.get(`/course/enrolled-courses/${userId}`);
 
             if (response.status === 200) {
                 setNewCourses(response.data.courses);

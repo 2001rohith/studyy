@@ -20,7 +20,8 @@ const { createCourse, getCourses, DeleteCourse, getCourse, EditCourse,
     getQuizSubmissions,
     getCourseStudents,
     sendEmailNotification,
-    updateClassStatusToEnded } = require("../controllers/courseController")
+    updateClassStatusToEnded,
+    getModuleData } = require("../controllers/courseController")
 const { homeCourses } = require("../controllers/studentController")
 
 //Teacher routes
@@ -33,12 +34,13 @@ router.post("/teacher-add-module", upload.fields([{ name: "pdf", maxCount: 1 }, 
 router.get("/home-get-courses/:id", homeCourses)
 router.delete("/teacher-delete-module/:id", DeleteModule)
 router.put("/teacher-edit-module/:id", upload.fields([{ name: "pdf", maxCount: 1 }, { name: "video", maxCount: 1 }]), EditModule)
+router.get("/get-module-data/:id", getModuleData)
 router.post("/create-assignment", CreateAssignment)
 router.get('/get-assignments/:id', GetAssignments);
 router.put("/teacher-edit-assignment/:id", EditAssignment)
 router.delete("/teacher-delete-assignment/:id", DeleteAssignment)
 router.post("/add-quiz", addQuiz)
-router.get('/get-quizzes/:id', getQuizzes);
+router.get('/get-quizzes/:id', getQuizzes)
 router.delete("/teacher-delete-quiz/:id", DeleteQuiz)
 router.get("/get-quiz/:id", GetQuiz)
 router.put("/teacher-edit-quiz/:id", EditQuiz)

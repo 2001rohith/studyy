@@ -1,58 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import TeacherSidebar from '../components/TeacherSidebar';
-import axios from 'axios';
-import API_URL from '../../axiourl';
-import { useUser } from "../../UserContext"
-
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
+import { useApiClient } from "../../utils/apiClient";
+import { useUser } from "../../UserContext";
 
 function TeacherQuizzes() {
+    const apiClient = useApiClient();
     const navigate = useNavigate();
     const location = useLocation();
-    const cId = location.state?.id;
-    const { user,token } = useUser();
-    const [courseId] = useState(cId);
-    console.log("course id from all course Quiz", courseId)
+    const { user } = useUser();
+    const [courseId] = useState(location.state?.id || "");
     const [quizzes, setQuizzes] = useState([]);
-    const [courseName, setCourseName] = useState("")
+    const [courseName, setCourseName] = useState("");
     const [submissions, setSubmissions] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [quizzesPerPage] = useState(5);
     const [modal, setModal] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [deleteModal, setDeleteModal] = useState(false)
-    const [showToast, setShowToast] = useState(false)
+    const [deleteModal, setDeleteModal] = useState(false);
+    const [showToast, setShowToast] = useState(false);
     const [message, setMessage] = useState('');
-    const [quizId, setQuizId] = useState("")
-
-    
+    const [quizId, setQuizId] = useState("");
 
     useEffect(() => {
         if (!user) {
             navigate('/');
             return;
         }
-        const getQuizzes = async () => {
+
+        const fetchQuizzes = async () => {
             try {
-
-                const response = await apiClient.get(`/course/get-quizzes/${courseId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-
+                const response = await apiClient.get(`/course/get-quizzes/${courseId}`);
                 const data = response.data;
                 if (response.status === 200) {
                     setQuizzes(data.quizzes);
-                    setCourseName(data.courseName)
+                    setCourseName(data.courseName);
                 } else {
-                    setError(data.message || 'Failed to fetch assignments');
+                    setError(data.message || 'Failed to fetch quizzes');
                 }
             } catch (error) {
                 setError('Server error, please try again later');
@@ -60,72 +45,58 @@ function TeacherQuizzes() {
                 setLoading(false);
             }
         };
-        getQuizzes()
-    }, [courseId]);
 
-    const addQuiz = () => {
-        navigate("/teacher-add-quiz", { state: { id: courseId } });
-    };
+        fetchQuizzes();
+    }, [courseId, user, navigate, apiClient]);
 
-    const handleEdit = (quiz) => {
-        navigate("/teacher-edit-quiz", { state: { quiz, courseId } });
-    };
+    const addQuiz = () => navigate("/teacher-add-quiz", { state: { id: courseId } });
+
+    const handleEdit = (quiz) => navigate("/teacher-edit-quiz", { state: { quiz, courseId } });
 
     const confirmDelete = (id) => {
-        setDeleteModal(!deleteModal)
-        setQuizId(id)
-    }
+        setDeleteModal(true);
+        setQuizId(id);
+    };
 
-    const handleDelete = async (id) => {
-        // if (!window.confirm('Are you sure you want to delete this course?')) return;
+    const handleDelete = async () => {
         try {
-
-            const response = await apiClient.delete(`/course/teacher-delete-quiz/${quizId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
+            const response = await apiClient.delete(`/course/teacher-delete-quiz/${quizId}`);
             const data = response.data;
             if (response.status === 200) {
-                setQuizzes(quizzes.filter(quiz => quiz._id !== quizId))
-                setDeleteModal(!deleteModal)
-                setQuizId("")
-                setMessage(data.message)
-                setShowToast(!showToast)
-                setTimeout(() => {
-                    setMessage("")
-                    setShowToast(false)
-                }, 5000);
+                setQuizzes(quizzes.filter((quiz) => quiz._id !== quizId));
+                setMessage(data.message);
+                setShowToast(true);
             } else {
-                alert("Failed to delete quiz");
+                setError('Failed to delete quiz');
             }
         } catch (error) {
-            console.log("Error in deleting quiz", error)
+            setError('Server error, please try again later');
+        } finally {
+            setDeleteModal(false);
+            setQuizId("");
         }
-    }
+    };
 
     const getSubmissions = async (quizId) => {
         try {
-            
-            const response = await apiClient.get(`/course/get-quiz-submissions/${quizId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
+            const response = await apiClient.get(`/course/get-quiz-submissions/${quizId}`);
             const data = response.data;
             if (response.status === 200) {
                 setSubmissions(data.submissions);
                 setModal(true);
             } else {
-                console.error(data.message || 'Failed to fetch submissions');
+                setError('Failed to fetch submissions');
             }
         } catch (error) {
-            console.error('Server error, please try again later');
+            setError('Server error, please try again later');
         }
     };
 
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+    const indexOfLastQuiz = currentPage * quizzesPerPage;
+    const indexOfFirstQuiz = indexOfLastQuiz - quizzesPerPage;
+    const currentQuizzes = quizzes.slice(indexOfFirstQuiz, indexOfLastQuiz);
 
     return (
         <div className='row'>
@@ -148,34 +119,44 @@ function TeacherQuizzes() {
                     ) : quizzes.length === 0 ? (
                         <p className='mt-3'>No quizzes available.</p>
                     ) : (
-                        <table className="table table-default table-hover table-responsive table-striped-columns table-borderless mt-2 ms-4">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Title</th>
-                                    <th>Course</th>
-                                    <th>Submissions</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {quizzes.map((quiz, index) => (
-                                    <tr key={quiz._id}>
-                                        <td>{index + 1}</td>
-                                        <td>{quiz.title}</td>
-                                        <td>{courseName}</td>
-                                        <td>
-                                            <button className='btn table-button mx-1' onClick={() => getSubmissions(quiz._id)}>View</button>
-
-                                        </td>
-                                        <td>
-                                            <button className='btn table-button mx-1' onClick={() => handleEdit(quiz)}>Edit</button>
-                                            <button className='btn table-button mx-1' onClick={() => confirmDelete(quiz._id)}>Delete</button>
-                                        </td>
+                        <>
+                            <table className="table table-default table-hover table-responsive table-striped-columns table-borderless mt-2 ms-4">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Title</th>
+                                        <th>Course</th>
+                                        <th>Submissions</th>
+                                        <th>Actions</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {currentQuizzes.map((quiz, index) => (
+                                        <tr key={quiz._id}>
+                                            <td>{indexOfFirstQuiz + index + 1}</td>
+                                            <td>{quiz.title}</td>
+                                            <td>{courseName}</td>
+                                            <td>
+                                                <button className='btn table-button mx-1' onClick={() => getSubmissions(quiz._id)}>View</button>
+                                            </td>
+                                            <td>
+                                                <button className='btn table-button mx-1' onClick={() => handleEdit(quiz)}>Edit</button>
+                                                <button className='btn table-button mx-1' onClick={() => confirmDelete(quiz._id)}>Delete</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            <nav className="pagination-container">
+                                <ul className="pagination">
+                                    {Array.from({ length: Math.ceil(quizzes.length / quizzesPerPage) }, (_, i) => (
+                                        <li key={i + 1} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}>
+                                            <button className="page-link" onClick={() => paginate(i + 1)}>{i + 1}</button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </nav>
+                        </>
                     )}
                 </div>
             </div>
@@ -198,7 +179,7 @@ function TeacherQuizzes() {
                                     </thead>
                                     <tbody>
                                         {submissions.map((submission, index) => (
-                                            <tr>
+                                            <tr key={index}>
                                                 <td>{submission.name}</td>
                                                 <td>{submission.score}</td>
                                                 <td>{new Date(submission.submittedAt).toLocaleString()}</td>
@@ -234,7 +215,7 @@ function TeacherQuizzes() {
                 </div>
             )}
             {showToast && (
-                <div className="toast show position-fixed  bottom-0 end-0 m-3" style={{ borderRadius: "15px", backgroundColor: "#0056b3", color: "white" }}>
+                <div className="toast show position-fixed bottom-0 end-0 m-3" style={{ borderRadius: "15px", backgroundColor: "#0056b3", color: "white" }}>
                     <div className="toast-body">
                         {message}
                         <button type="button" className="btn-close ms-2 mb-1" onClick={() => setShowToast(false)}></button>

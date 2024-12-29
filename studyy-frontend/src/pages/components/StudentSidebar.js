@@ -1,22 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import io from "socket.io-client"
-import axios from 'axios';
-import API_URL from '../../axiourl';
+import { useApiClient } from "../../utils/apiClient"
 import { useUser } from "../../UserContext"
-
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
-
+import API_URL from '../../axiourl';
 
 const socket = io(`${API_URL}`)
 
 function StudentSidebar() {
+    const apiClient = useApiClient()
     const navigate = useNavigate();
     const [notificationModal, setNotificationModal] = useState(false);
     const [showModal, setShowModal] = useState(false);
@@ -45,11 +37,7 @@ function StudentSidebar() {
     const fetchNotifications = async () => {
         try {
             setLoading(true);
-            const response = await apiClient.get(`/course/get-notifications/${user.id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.get(`/course/get-notifications/${user.id}`);
 
             const data = response.data;
             if (response.status === 200) {
@@ -77,10 +65,6 @@ function StudentSidebar() {
                 const response = await apiClient.post(`/course/mark-notifications-as-read`, {
                     notificationIds: unreadIds,
                     studentId: user.id
-                }, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
                 });
 
                 setNotifications((prev) =>

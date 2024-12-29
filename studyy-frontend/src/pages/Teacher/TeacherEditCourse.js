@@ -1,20 +1,16 @@
 import { useState, useEffect } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar'
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
+
 
 
 const TeacherEditCourse = () => {
+    const apiClient = useApiClient()
+
     const { user,token } = useUser();
     const navigate = useNavigate()
     const location = useLocation()
@@ -33,11 +29,7 @@ const TeacherEditCourse = () => {
             console.log("course id again", courseId)
             try {
 
-                const response = await apiClient.get(`/course/get-course/${courseId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
+                const response = await apiClient.get(`/course/get-course/${courseId}`);
 
                 const data = response.data;
                 console.log("data from teacher home", data)
@@ -66,11 +58,7 @@ const TeacherEditCourse = () => {
         }
         try {
 
-            const response = await apiClient.put(`/course/teacher-edit-course/${courseId}`, { title: trimmedTitle, description: trimmedDescription }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.put(`/course/teacher-edit-course/${courseId}`, { title: trimmedTitle, description: trimmedDescription });
 
             const data = response.data;
             setMessage(data.message);
@@ -103,11 +91,7 @@ const TeacherEditCourse = () => {
         // if (!window.confirm('Are you sure you want to delete this module?')) return;
         try {
             
-            const response = await apiClient.delete(`/course/teacher-delete-module/${moduleId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.delete(`/course/teacher-delete-module/${moduleId}`);
 
             const data = response.data;
             if (response.status === 200) {

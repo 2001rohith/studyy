@@ -1,20 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import StudentSidebar from '../components/StudentSidebar'
-import axios from 'axios';
-import API_URL from '../../axiourl';
+import { useApiClient } from "../../utils/apiClient"
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
 
 
 function StudentCheckCourse() {
+    const apiClient = useApiClient()
     const navigate = useNavigate()
     const location = useLocation()
     const { user, token } = useUser();
@@ -41,11 +34,7 @@ function StudentCheckCourse() {
 
             try {
 
-                const response = await apiClient.get(`/course/get-course/${courseId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
+                const response = await apiClient.get(`/course/get-course/${courseId}`);
 
                 const data = response.data;
                 console.log("data from check course", data)
@@ -68,11 +57,7 @@ function StudentCheckCourse() {
     const enrollCourse = async () => {
         try {
             
-            const response = await apiClient.post(`/course/student-enroll`, { studentId: user.id, courseId }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.post(`/course/student-enroll`, { studentId: user.id, courseId });
 
             const data = response.data;
             if (response.status === 200) {

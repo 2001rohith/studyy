@@ -1,25 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TeacherSidebar from '../components/TeacherSidebar'
-import axios from 'axios';
+import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
 
 function TeacherProfile() {
+    const apiClient = useApiClient()
     const navigate = useNavigate()
     // const location = useLocation()
-    const { user, updateUser,token } = useUser();
+    const { user, updateUser, token } = useUser();
     const [userId, setUserId] = useState(user.id)
     console.log("user id:", userId)
-    const [userData,setUserdata] = useState()
+    const [userData, setUserdata] = useState()
     const [currentPassword, setCurrentPassword] = useState("")
     const [newPassword, setNewPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
@@ -32,7 +26,7 @@ function TeacherProfile() {
     const [error, setError] = useState(null)
     const [isVerified, setIsVerified] = useState()
 
-    
+
 
     const getProfileData = async () => {
         // if (!user) {
@@ -40,11 +34,7 @@ function TeacherProfile() {
         //     return;
         // }
         try {
-            const response = await apiClient.get(`/user/get-profile-data/${userId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            })
+            const response = await apiClient.get(`/user/get-profile-data/${userId}`)
             const data = response.data;
             if (response.status === 200) {
                 setUserdata(data.user)
@@ -62,11 +52,7 @@ function TeacherProfile() {
     const getCourses = async () => {
         try {
 
-            const response = await apiClient.get(`/course/get-courses`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.get(`/course/get-courses`);
 
             const data = response.data;
             if (response.status === 200) {
@@ -96,10 +82,6 @@ function TeacherProfile() {
             const response = await apiClient.post(`/user/change-password/${user.id}`, {
                 currentPassword,
                 newPassword,
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
             });
 
             const data = response.data;
@@ -132,12 +114,8 @@ function TeacherProfile() {
                 setMessage("Too short for name")
                 return
             }
-        
-            const response = await apiClient.put(`/user/edit-profile/${user.id}`, { name }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+
+            const response = await apiClient.put(`/user/edit-profile/${user.id}`, { name });
 
             const data = response.data;
             setMessage(data.message)
@@ -191,13 +169,18 @@ function TeacherProfile() {
                     <div className='row profile-banner ms-5'>
                         {user ? (
                             <>
-                                <h2>{user.name}</h2>
-                                <p>{user.email}</p>
                                 {
-                                    isVerified === true ?(
-                                        <p style={{color:"green"}}>Verified</p>
-                                    ):(
-                                        <p style={{color:"red"}}>Not verified</p>
+                                    isVerified === true ? (
+                                        <>
+                                            <h2>{user.name} <i className="fa-sharp-duotone fa-solid fa-check fa-sm"></i></h2>
+                                            <p>{user.email}</p>
+                                            
+                                        </>
+                                    ) : (
+                                        <>
+                                        <h2>{user.name}</h2>
+                                        <p>{user.email}</p>
+                                        </>
                                     )
                                 }
                             </>

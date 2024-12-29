@@ -1,18 +1,14 @@
 import { useState } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Accept': 'application/json',
-    },
-});
+
 
 const TeacherAddCourse = () => {
+    const apiClient = useApiClient()
     const location = useLocation();
     const navigate = useNavigate();
     const { user, token } = useUser();
@@ -46,11 +42,7 @@ const TeacherAddCourse = () => {
 
         try {
 
-            const response = await apiClient.post(`/course/create`, { title: trimmedTitle, description: trimmedDescription, userId }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.post(`/course/create`, { title: trimmedTitle, description: trimmedDescription, userId });
 
             const data = response.data;
             if (response.status === 200) {
@@ -83,11 +75,7 @@ const TeacherAddCourse = () => {
 
         try {
 
-            const response = await apiClient.post(`/course/teacher-add-module`, formData, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.post(`/course/teacher-add-module`, formData);
 
             const data = response.data;
             if (response.status === 200) {

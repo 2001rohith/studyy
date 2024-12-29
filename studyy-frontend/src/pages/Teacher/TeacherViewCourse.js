@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import TeacherSidebar from '../components/TeacherSidebar'
-import axios from 'axios';
+import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
+
 
 function TeacherViewCourse() {
+    const apiClient = useApiClient()
+
     const navigate = useNavigate()
     const location = useLocation()
     const courseId = location.state?.id
@@ -41,11 +37,7 @@ function TeacherViewCourse() {
 
             try {
 
-                const response = await apiClient.get(`/course/get-course/${courseId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
+                const response = await apiClient.get(`/course/get-course/${courseId}`);
 
                 const data = response.data;
                 console.log("data from teacher home", data)
@@ -68,11 +60,7 @@ function TeacherViewCourse() {
         // if (!window.confirm('Are you sure you want to delete this module?')) return;
         try {
             
-            const response = await apiClient.delete(`/course/teacher-delete-module/${moduleId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.delete(`/course/teacher-delete-module/${moduleId}`);
 
             const data = response.data;
             if (response.status === 200) {

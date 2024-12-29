@@ -4,22 +4,15 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import TeacherSidebar from '../components/TeacherSidebar';
 import '../css/TeacherLiveClass.css';
 import io from 'socket.io-client';
-import axios from 'axios';
+import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
 
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
-
 const socket = io(`${API_URL}`);
 
 function TeacherLiveClass() {
+    const apiClient = useApiClient()
     const { user,token } = useUser();
     const [peerId, setPeerId] = useState('');
     const [isMuted, setIsMuted] = useState(false);
@@ -64,11 +57,7 @@ function TeacherLiveClass() {
     const sendPeerIdToBackend = async (Id) => {
         try {
 
-            const response = await apiClient.put(`/course/add-peerid/${classId}`, { peerId: Id }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.put(`/course/add-peerid/${classId}`, { peerId: Id });
 
             if (response.status === 200) {
                 console.log('Peer ID saved successfully');
@@ -192,11 +181,7 @@ function TeacherLiveClass() {
     const updateStatus = async () => {
         try {
             
-            const response = await apiClient.put(`/course/update-class-status/${classId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.put(`/course/update-class-status/${classId}`);
 
             if (response.status === 200) {
                 console.log('Class status updated');

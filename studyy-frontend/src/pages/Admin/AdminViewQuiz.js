@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom'
 import Sidebar2 from '../components/Sidebar2';
 import { useUser } from "../../UserContext"
@@ -10,10 +10,12 @@ function AdminViewQuiz() {
     const { user, token } = useUser();
     console.log("quiz from admin view quiz:", quiz)
 
-    if (!user || !token) {
-        navigate('/');
-        return;
-    }
+    useEffect(() => {
+        if (!user || !token) {
+            navigate('/');
+            return;
+        }
+    }, [])
 
     if (!quiz) {
         return <div>Quiz not found.</div>;

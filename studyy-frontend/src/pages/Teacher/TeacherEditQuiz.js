@@ -2,19 +2,15 @@ import { useEffect, useState } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client'
-import axios from 'axios';
+import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Accept': 'application/json',
-    },
-});
 const socket = io(`${API_URL}`);
 
 const TeacherEditQuiz = () => {
+    const apiClient = useApiClient()
+
     const location = useLocation();
     const navigate = useNavigate();
     const { user,token } = useUser();
@@ -29,11 +25,7 @@ const TeacherEditQuiz = () => {
         const fetchQuizDetails = async () => {
             try {
 
-                const response = await apiClient.get(`/course/get-quiz/${quizId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
+                const response = await apiClient.get(`/course/get-quiz/${quizId}`);
 
                 const data = response.data;
                 if (response.status === 200) {
@@ -90,11 +82,7 @@ const TeacherEditQuiz = () => {
 
         try {
 
-            const response = await apiClient.put(`/course/teacher-edit-quiz/${quizId}`, quizData, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.put(`/course/teacher-edit-quiz/${quizId}`, quizData);
 
             const data = response.data;
             if (response.status === 200) {

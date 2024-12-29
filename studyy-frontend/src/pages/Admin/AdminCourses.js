@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar2 from '../components/Sidebar2';
-import axios from 'axios';
-import API_URL from '../../axiourl';
+import { useApiClient } from "../../utils/apiClient"
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-});
+
 
 function AdminCourses() {
+  const apiClient = useApiClient()
   const navigate = useNavigate();
   const { user, token } = useUser();
   const [courses, setCourses] = useState([]);
@@ -29,16 +23,12 @@ function AdminCourses() {
 
   const getCourses = async () => {
     try {
-      const response = await apiClient.get(`/course/admin-get-courses`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await apiClient.get(`/course/admin-get-courses`);
 
       const data = response.data;
       if (response.status === 200) {
         setCourses(data.courses || []);
-        setAllCourses(data.courses || []);
+        setAllCourses(data.courses || [])
         setLoading(false);
       } else {
         setError(data.message || 'Failed to fetch courses.');
@@ -78,11 +68,7 @@ function AdminCourses() {
     if (!window.confirm('Are you sure you want to delete this course?')) return;
 
     try {
-      const response = await apiClient.delete(`/course/teacher-delete-course/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await apiClient.delete(`/course/teacher-delete-course/${id}`);
 
       if (response.status === 200) {
         alert("Course deleted successfully");

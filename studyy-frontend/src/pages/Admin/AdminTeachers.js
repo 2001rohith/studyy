@@ -1,19 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar2 from '../components/Sidebar2';
-import axios from 'axios';
-import API_URL from '../../axiourl';
+import { useApiClient } from "../../utils/apiClient"
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
 
 function AdminTeachers() {
+    const apiClient = useApiClient()
     const navigate = useNavigate();
     const { user,token } = useUser();
     const [users, setUsers] = useState([]);
@@ -38,11 +31,7 @@ function AdminTeachers() {
         }
         const getTeachers = async () => {
             try {
-                const response = await apiClient.get('/user/get-teachers', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
+                const response = await apiClient.get('/user/get-teachers');
 
                 const data = response.data;
                 setUsers(data.users);
@@ -101,11 +90,7 @@ function AdminTeachers() {
     const handleVerification = async (userId) => {
         try {
 
-            const response = await apiClient.put(`/user/admin-verify-teacher/${userId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.put(`/user/admin-verify-teacher/${userId}`);
 
             if (response.status === 200) {
                 navigate(0);

@@ -1,17 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
-import API_URL from '../../axiourl';
-
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
+import { useApiClient } from "../../utils/apiClient"
 
 function Otp() {
+    const apiClient = useApiClient()
     const [otp, setOtp] = useState('');
     const [message, setMessage] = useState('OTP has been sent via SMS!');
     const [timer, setTimer] = useState(120);

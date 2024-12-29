@@ -1,19 +1,14 @@
 import { useState, useEffect } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
+
 
 const TeacherEditAssignment = () => {
+    const apiClient = useApiClient()
     const { user,token } = useUser();
     const navigate = useNavigate();
     const location = useLocation();
@@ -23,6 +18,7 @@ const TeacherEditAssignment = () => {
     const [title, setTitle] = useState(assignment.title || '');
     const [description, setDescription] = useState(assignment.description || '');
     const [dueDate, setDueDate] = useState(assignment.dueDate || '');
+    console.log("due date:",dueDate)
     const [message, setMessage] = useState('');
 
     useEffect(() => {
@@ -49,11 +45,7 @@ const TeacherEditAssignment = () => {
 
         try {
            
-            const response = await apiClient.put(`/course/teacher-edit-assignment/${assignment._id}`, { title: trimmedTitle, description: trimmedDescription, dueDate }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.put(`/course/teacher-edit-assignment/${assignment._id}`, { title: trimmedTitle, description: trimmedDescription, dueDate });
 
             const data = response.data;
             setMessage(data.message);
@@ -64,6 +56,9 @@ const TeacherEditAssignment = () => {
             console.error('Error updating assignment:', error);
             setMessage('Error updating assignment, please try again later.');
         }
+    };
+    const formatDate = (date) => {
+        return date.split("T")[0]
     };
 
     return (
@@ -94,7 +89,7 @@ const TeacherEditAssignment = () => {
                                 <input
                                     className='form-control'
                                     type="date"
-                                    value={dueDate}
+                                    value={formatDate(dueDate)}
                                     onChange={(e) => setDueDate(e.target.value)}
                                     
                                 />

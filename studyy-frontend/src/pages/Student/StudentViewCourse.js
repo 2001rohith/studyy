@@ -1,22 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import StudentSidebar from '../components/StudentSidebar'
-import axios from 'axios';
+import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
-
 function StudentViewCourse() {
+    const apiClient = useApiClient()
     const navigate = useNavigate()
     const location = useLocation()
-    const { user,token } = useUser();
+    const { user, token } = useUser();
     const [courseId] = useState(location.state?.courseId)
     console.log("user id from checkout page:", user.id)
     console.log("course id from checkout page:", courseId)
@@ -29,7 +22,7 @@ function StudentViewCourse() {
     const [contentType, setContentType] = useState("")
     console.log("course id", courseId)
 
-    
+
 
     useEffect(() => {
         if (!user) {
@@ -41,11 +34,7 @@ function StudentViewCourse() {
 
             try {
 
-                const response = await apiClient.get(`/course/get-course/${courseId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
+                const response = await apiClient.get(`/course/get-course/${courseId}`);
 
                 const data = response.data;
                 console.log("data from check course", data)
@@ -77,8 +66,6 @@ function StudentViewCourse() {
         setContentType("video")
         setShowModal(true);
     };
-
-
 
     const closeModal = () => {
         setShowModal(false);

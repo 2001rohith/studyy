@@ -1,19 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar2 from '../components/Sidebar2';
-import axios from 'axios';
-import API_URL from '../../axiourl';
+import { useApiClient } from "../../utils/apiClient"
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-});
-
 function AdminQuizzes() {
+  const apiClient = useApiClient()
   const navigate = useNavigate();
   const { user,token } = useUser();
   const [quizzes, setQuizzes] = useState([]);
@@ -27,11 +19,7 @@ function AdminQuizzes() {
 
   const getQuizzes = async () => {
     try {
-      const response = await apiClient.get('/course/admin-get-quizzes', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await apiClient.get('/course/admin-get-quizzes');
 
       const data = response.data;
       if (response.status === 200) {
@@ -76,11 +64,7 @@ function AdminQuizzes() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this quiz?')) return;
     try {
-        const response = await apiClient.delete(`/course/admin-delete-quiz/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+        const response = await apiClient.delete(`/course/admin-delete-quiz/${id}`);
         if (response.status === 200) {
         alert('Quiz deleted successfully');
         const updatedQuizzes = quizzes.filter((quiz) => quiz._id !== id);
@@ -156,8 +140,7 @@ function AdminQuizzes() {
                       </button>
                       <button
                         className="btn table-button mx-1"
-                        onClick={() => handleDelete(quiz._id)}
-                      >
+                        onClick={() => handleDelete(quiz._id)}>
                         Delete
                       </button>
                     </td>
@@ -165,8 +148,7 @@ function AdminQuizzes() {
                 ))}
               </tbody>
             </table>
-          )}
-          {currentQuizzes.length > 0 && (
+          )}   
             <nav>
               <ul className="pagination">
                 {Array.from({ length: Math.ceil(allQuizzes.length / quizPerPage) }, (_, i) => (
@@ -178,7 +160,6 @@ function AdminQuizzes() {
                 ))}
               </ul>
             </nav>
-          )}
         </div>
       </div>
     </div>

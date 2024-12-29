@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar2 from '../components/Sidebar2';
-import axios from 'axios';
-import API_URL from '../../axiourl';
+// import axios from 'axios';
+import { useApiClient } from "../../utils/apiClient"
 import { useUser } from "../../UserContext"
-
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    }
-});
+// import API_URL from '../../axiourl';
+// const apiClient = axios.create({
+//     baseURL: API_URL,
+//     headers: {
+//         'Content-Type': 'application/json',
+//         'Accept': 'application/json',
+//     }
+// });
 
 function AdminAssignments() {
+    const apiClient = useApiClient()
     const navigate = useNavigate();
     const { user, token } = useUser();
     const [assignments, setAssignments] = useState([]);
@@ -25,16 +26,9 @@ function AdminAssignments() {
     const [courseName, setCourseName] = useState('');
     const [currentAssignments, setCurrentAssignments] = useState([]);
 
-    
-
     const getAssignments = async () => {
         try {
-            const response = await apiClient.get('/course/admin-get-assignments', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
+            const response = await apiClient.get('/course/admin-get-assignments');
             const data = response.data;
             if (response.status === 200) {
                 setAssignments(data.assignments || []);
@@ -77,11 +71,7 @@ function AdminAssignments() {
 
     const handleDelete = async (id) => {
         try {
-            const response = await apiClient.delete(`/course/admin-delete-assignment/${id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.delete(`/course/admin-delete-assignment/${id}`);
             if (response.status === 200) {
                 alert("Assignment deleted successfully");
                 const updatedAssignments = assignments.filter(assignment => assignment._id !== id);

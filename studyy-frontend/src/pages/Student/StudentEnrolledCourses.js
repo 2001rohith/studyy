@@ -1,24 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StudentSidebar from '../components/StudentSidebar';
-import axios from 'axios';
-import API_URL from '../../axiourl';
-import { useUser } from "../../UserContext"
-
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-});
+import { useApiClient } from "../../utils/apiClient";
+import { useUser } from "../../UserContext";
 
 function StudentEnrolledCourses() {
+  const apiClient = useApiClient();
   const navigate = useNavigate();
-  const { user,token } = useUser();
+  const { user, token } = useUser();
   const [loading, setLoading] = useState(true);
   const [newCourses, setNewCourses] = useState([]);
-  console.log("user from enrolled course:", user)
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6; // Number of courses per page
+
+  // Calculate pagination details
+  const totalPages = Math.max(1, Math.ceil(newCourses.length / itemsPerPage));
+  const currentCourses = newCourses.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   useEffect(() => {
     const fetchEnrolledCourses = async () => {
@@ -27,15 +29,8 @@ function StudentEnrolledCourses() {
         return;
       }
       try {
-
-        const response = await apiClient.get(`/course/enrolled-courses/${user.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
+        const response = await apiClient.get(`/course/enrolled-courses/${user.id}`);
         const data = response.data;
-        console.log("data from enrolled course:", data)
         setNewCourses(data.courses);
         setLoading(false);
       } catch (error) {
@@ -48,6 +43,10 @@ function StudentEnrolledCourses() {
 
   const viewCourse = (id) => {
     navigate('/student-view-course', { state: { courseId: id } });
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
   };
 
   if (loading) {
@@ -72,8 +71,8 @@ function StudentEnrolledCourses() {
             <div className="row mt-3 text-dark">
               <h5 className="mb-3">Enrolled Courses</h5>
               <div className="scroll-container">
-                {newCourses ? (
-                  newCourses.map((course) => (
+                {currentCourses.length > 0 ? (
+                  currentCourses.map((course) => (
                     <div
                       className="card course-card mx-2"
                       style={{ width: '20rem', height: '25rem' }}
@@ -112,6 +111,18 @@ function StudentEnrolledCourses() {
                 )}
               </div>
             </div>
+          </div>
+          {/* Pagination controls */}
+          <div className="pagination-controls text-center mt-4">
+            {[...Array(totalPages).keys()].map((_, index) => (
+              <button
+                key={index}
+                className={`btn mx-1 ${currentPage === index + 1 ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => handlePageChange(index + 1)}
+              >
+                {index + 1}
+              </button>
+            ))}
           </div>
         </div>
       </div>

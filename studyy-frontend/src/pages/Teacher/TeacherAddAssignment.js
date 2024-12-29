@@ -1,20 +1,14 @@
 import { useState,useEffect } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import API_URL from '../../axiourl';
+import { useApiClient } from "../../utils/apiClient"
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
 
 
 const TeacherAddAssignment = () => {
+    const apiClient = useApiClient()
     const location = useLocation();
     const navigate = useNavigate()
     const { user,token } = useUser();
@@ -45,11 +39,7 @@ const TeacherAddAssignment = () => {
 
         try {
             
-            const response = await apiClient.post(`/course/create-assignment`, { title: trimmedTitle, description, dueDate: deadlineDate, courseId }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.post(`/course/create-assignment`, { title: trimmedTitle, description, dueDate: deadlineDate, courseId });
 
             const data = response.data;
             if (response.status === 200) {

@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import TeacherSidebar from '../components/TeacherSidebar';
-import axios from 'axios';
+import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
+
 
 function TeacherAssignments() {
+    const apiClient = useApiClient()
+
     const navigate = useNavigate();
     const location = useLocation();
     const cId = location.state?.id;
@@ -32,15 +28,13 @@ function TeacherAssignments() {
     const [assnId, setAssnId] = useState("")
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [assignmentsPerPage] = useState(5);
 
     const getAssignments = async () => {
         try {
 
-            const response = await apiClient.get(`/course/get-assignments/${courseId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.get(`/course/get-assignments/${courseId}`);
 
             const data = response.data;
             if (response.status === 200) {
@@ -80,11 +74,7 @@ function TeacherAssignments() {
 
     const handleDelete = async (id) => {
         try {
-            const response = await apiClient.delete(`/course/teacher-delete-assignment/${assnId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.delete(`/course/teacher-delete-assignment/${assnId}`);
 
             const data = response.data;
             if (response.status === 200) {
@@ -109,11 +99,7 @@ function TeacherAssignments() {
         setLoading(true);
         try {
 
-            const response = await apiClient.get(`/course/get-assignment-submissions/${id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.get(`/course/get-assignment-submissions/${id}`);
 
             const data = response.data;
             if (response.status === 200) {
@@ -141,9 +127,13 @@ function TeacherAssignments() {
         setShowModal(false);
         setSelectedSubmission(null);
         setContentType("")
-
     };
 
+    const indexOfLastAssignment = currentPage * assignmentsPerPage;
+    const indexOfFirstAssignment = indexOfLastAssignment - assignmentsPerPage;
+    const currentAssignments = assignments.slice(indexOfFirstAssignment, indexOfLastAssignment);
+
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     return (
         <div className='row'>
@@ -179,7 +169,7 @@ function TeacherAssignments() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {assignments.map((assignment, index) => (
+                                {currentAssignments.map((assignment, index) => (
                                     <tr key={assignment._id}>
                                         <td>{index + 1}</td>
                                         <td>{assignment.title}</td>
@@ -210,6 +200,17 @@ function TeacherAssignments() {
                             </tbody>
                         </table>
                     )}
+                    <nav>
+                            <ul className="pagination">
+                                {Array.from({ length: Math.ceil(assignments.length / assignmentsPerPage) }, (_, i) => (
+                                    <li key={i + 1} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}>
+                                        <button onClick={() => paginate(i + 1)} className="page-link">
+                                            {i + 1}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </nav>
                 </div>
             </div>
             {modal && (

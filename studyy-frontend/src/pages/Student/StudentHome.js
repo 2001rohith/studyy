@@ -2,20 +2,16 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import StudentSidebar from '../components/StudentSidebar'
 import Footer from "../components/Footer"
-import axios from 'axios';
-import API_URL from '../../axiourl';
+import { useApiClient } from "../../utils/apiClient"
+
 import { useUser } from "../../UserContext"
 
 
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-});
+
 
 function StudentHome() {
+  const apiClient = useApiClient()
+
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [courses, setCourses] = useState([]);
@@ -43,11 +39,7 @@ function StudentHome() {
 
   const fetchCourses = async (userId, token) => {
     try {
-      const response = await apiClient.get(`/course/home-get-courses/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await apiClient.get(`/course/home-get-courses/${userId}`);
       const data = response.data
       console.log("response on fetching course for student home:",data)
       if (response.status === 200) {

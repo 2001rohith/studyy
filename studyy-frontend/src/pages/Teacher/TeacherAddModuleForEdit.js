@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import TeacherSidebar from '../components/TeacherSidebar';
-import axios from 'axios';
+import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Accept': 'application/json',
-    },
-});
 
 
 function TeacherAddModuleForEdit() {
+    const apiClient = useApiClient()
     const location = useLocation();
     const navigate = useNavigate();
     const courseId = location.state?.courseId;
@@ -48,11 +43,7 @@ function TeacherAddModuleForEdit() {
         try {
             setLoading(true);
             
-            const response = await apiClient.post(`/course/teacher-add-module`, formData, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.post(`/course/teacher-add-module`, formData);
 
             const data = response.data;
             if (response.status === 200) {

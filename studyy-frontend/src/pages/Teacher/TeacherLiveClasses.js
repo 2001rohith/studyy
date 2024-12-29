@@ -1,47 +1,37 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import TeacherSidebar from '../components/TeacherSidebar'
-import io from 'socket.io-client'
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import TeacherSidebar from '../components/TeacherSidebar';
+import io from 'socket.io-client';
+import { useApiClient } from "../../utils/apiClient";
 import API_URL from '../../axiourl';
-import { useUser } from "../../UserContext"
-
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
+import { useUser } from "../../UserContext";
 
 const socket = io(`${API_URL}`);
 
 function TeacherLiveClasses() {
-    const navigate = useNavigate()
-    const location = useLocation()
-    const courseId = location.state?.id
-    console.log("course id from teacher all classes:", courseId)
-    const { user,token } = useUser();
-    const [message, setMessage] = useState("")
-    const [classes, setClasses] = useState([])
-    const [loading, setLoading] = useState(false)
-    const [selectedClass, setSelectedClass] = useState(null)
-    const [showModal, setShowModal] = useState(false)
-    const [showToast, setShowToast] = useState(false)
-    const [error, setError] = useState(null)
+    const apiClient = useApiClient();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const courseId = location.state?.id;
+    const { user } = useUser();
+
+    const [classes, setClasses] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedClass, setSelectedClass] = useState(null);
+    const [showModal, setShowModal] = useState(false);
+    const [showToast, setShowToast] = useState(false);
+    const [message, setMessage] = useState("");
+    const [error, setError] = useState(null);
+
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [classesPerPage] = useState(5);
 
     const fetchClasses = async () => {
         try {
-
-            const response = await apiClient.get(`/course/teacher-get-classes/${courseId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
+            const response = await apiClient.get(`/course/teacher-get-classes/${courseId}`);
             const data = response.data;
-            setMessage(data.message)
-            console.log("message:", message)
+
             if (response.status === 200) {
                 setClasses(data.classes);
             } else {
@@ -56,28 +46,20 @@ function TeacherLiveClasses() {
 
     const handleDelete = async () => {
         try {
-            
-            const response = await apiClient.delete(`/course/teacher-delete-class/${selectedClass._id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
+            const response = await apiClient.delete(`/course/teacher-delete-class/${selectedClass._id}`);
             const data = response.data;
-            setMessage(data.message)
-            setShowModal(false)
-            setShowToast(true)
-            console.log("message:", message)
+
             if (response.status === 200) {
                 setClasses(classes.filter(cls => cls._id !== selectedClass._id));
-
+                setMessage(data.message);
             } else {
-                setError('No live classes found or failed to fetch!');
+                setError('Failed to delete the class!');
             }
         } catch (err) {
             setError('Server error, please try again later');
         } finally {
-            setLoading(false);
+            setShowModal(false);
+            setShowToast(true);
         }
     };
 
@@ -86,31 +68,38 @@ function TeacherLiveClasses() {
             navigate('/');
             return;
         }
-    
+
         if (courseId) fetchClasses();
-    }, [courseId,user]);
+    }, [courseId, user]);
 
     const handleAddClass = () => {
         navigate("/add-live-class", { state: { id: courseId } });
     };
 
     const handleEdit = (cls) => {
-        navigate("/edit-class", { state: { Class: cls, courseId } })
-    }
+        navigate("/edit-class", { state: { Class: cls, courseId } });
+    };
 
     const handleStartClass = (classId, status) => {
         if (status === "Ended") {
-            setMessage("Class ended!")
-            setShowToast(true)
-            return
+            setMessage("Class ended!");
+            setShowToast(true);
+            return;
         }
+
         socket.emit('notificationAdded', {
             courseId: courseId,
             teacherId: user.id,
         });
-        console.log("Teacher has started the class")
-        navigate(`/teacher-live-class`, { state: { classId, courseId } })
-    }
+        navigate(`/teacher-live-class`, { state: { classId, courseId } });
+    };
+
+    // Pagination Logic
+    const indexOfLastClass = currentPage * classesPerPage;
+    const indexOfFirstClass = indexOfLastClass - classesPerPage;
+    const currentClasses = classes.slice(indexOfFirstClass, indexOfLastClass);
+
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     return (
         <>
@@ -120,7 +109,7 @@ function TeacherLiveClasses() {
                 </div>
                 <div className='col text-light'>
                     <div className='row headers'>
-                        <h4>Live classes</h4>
+                        <h4>Live Classes</h4>
                     </div>
                     <div className='row table-content'>
                         <button className='btn regular-button mt-3 mb-3 ms-4' onClick={handleAddClass}>Add</button>
@@ -128,6 +117,8 @@ function TeacherLiveClasses() {
                             <div className="spinner-border text-primary spinner" role="status">
                                 <span className="visually-hidden">Loading...</span>
                             </div>
+                        ) : error ? (
+                            <p className='text-dark'>{error}</p>
                         ) : classes.length === 0 ? (
                             <p className='text-dark'>No classes available</p>
                         ) : (
@@ -143,7 +134,7 @@ function TeacherLiveClasses() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {classes.map((classItem) => (
+                                    {currentClasses.map((classItem) => (
                                         <tr key={classItem._id}>
                                             <td>{classItem.title}</td>
                                             <td>{new Date(classItem.date).toLocaleDateString()}</td>
@@ -153,16 +144,32 @@ function TeacherLiveClasses() {
                                             <td>
                                                 <button className='btn table-button ms-1' onClick={() => handleStartClass(classItem._id, classItem.status)}>Start</button>
                                                 <button className='btn table-button ms-1' onClick={() => handleEdit(classItem)}>Edit</button>
-                                                <button className='btn table-button ms-1' onClick={() => { setShowModal(true); setSelectedClass(classItem) }}>Delete</button>
+                                                <button className='btn table-button ms-1' onClick={() => { setShowModal(true); setSelectedClass(classItem); }}>Delete</button>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         )}
+
+                      
+                       
+                            <nav>
+                                <ul className="pagination">
+                                    {Array.from({ length: Math.ceil(classes.length / classesPerPage) }, (_, i) => (
+                                        <li key={i + 1} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}>
+                                            <button onClick={() => paginate(i + 1)} className="page-link">
+                                                {i + 1}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </nav>
+                        
                     </div>
                 </div>
             </div>
+
             {showModal && (
                 <div className="modal show d-block" tabIndex="-1">
                     <div className="modal-dialog">
@@ -182,8 +189,9 @@ function TeacherLiveClasses() {
                     </div>
                 </div>
             )}
+
             {showToast && (
-                <div className="toast show position-fixed  bottom-0 end-0 m-3" style={{ borderRadius: "15px", backgroundColor: "#0056b3", color: "white" }}>
+                <div className="toast show position-fixed bottom-0 end-0 m-3" style={{ borderRadius: "15px", backgroundColor: "#0056b3", color: "white" }}>
                     <div className="toast-body">
                         {message}
                         <button type="button" className="btn-close ms-2 mb-1" onClick={() => setShowToast(false)}></button>
@@ -191,7 +199,7 @@ function TeacherLiveClasses() {
                 </div>
             )}
         </>
-    )
+    );
 }
 
-export default TeacherLiveClasses
+export default TeacherLiveClasses;

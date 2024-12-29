@@ -1,6 +1,7 @@
 const User = require("../models/userModel")
 const Course = require("../models/courseModel")
 const Module = require("../models/moduleModel")
+const HttpStatus = require("../helpers/httpStatus")
 
 
 
@@ -11,7 +12,7 @@ exports.homeCourses = async (req, res) => {
         const user = await User.findById(userId).populate('enrolledCourses', '_id');
         console.log("user from get home course:", user)
         if (!user) {
-            return res.status(404).json({ message: "User not found" });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "User not found" });
         }
 
         const enrolledCourseIds = user.enrolledCourses.map(course => course._id);
@@ -19,10 +20,10 @@ exports.homeCourses = async (req, res) => {
         const courses = await Course.find({ _id: { $nin: enrolledCourseIds } }).sort({ createdAt: -1 });
         console.log("courses:", courses)
         if (courses.length === 0) {
-            return res.json({ message: "No courses available" });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "No courses available" });
         }
 
-        res.status(200).json({
+        res.status(HttpStatus.OK).json({
             status: "ok",
             courses,
             message: "Fetched courses successfully",
@@ -30,6 +31,6 @@ exports.homeCourses = async (req, res) => {
 
     } catch (error) {
         console.error("Get courses error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 };

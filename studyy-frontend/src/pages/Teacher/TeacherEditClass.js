@@ -1,19 +1,13 @@
 import { useState } from 'react';
 import TeacherSidebar from '../components/TeacherSidebar';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
 
 const TeacherEditClass = () => {
+    const apiClient = useApiClient()
     const navigate = useNavigate();
     const location = useLocation();
     const ClassReceived = location.state?.Class
@@ -60,10 +54,6 @@ const TeacherEditClass = () => {
                 time,
                 duration,
                 status
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
             });
 
             const data = response.data;
@@ -79,6 +69,10 @@ const TeacherEditClass = () => {
             setLoading(false);
         }
     };
+    const formatDate = (date) => {
+        return date.split("T")[0]
+    };
+
 
     return (
         <>
@@ -111,7 +105,7 @@ const TeacherEditClass = () => {
                                     <input
                                         className="form-control mb-3"
                                         type="date"
-                                        value={date}
+                                        value={formatDate(date)}
                                         onChange={(e) => setDate(e.target.value)}
                                         
                                     />

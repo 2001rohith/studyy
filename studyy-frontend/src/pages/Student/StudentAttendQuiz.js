@@ -1,19 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import StudentSidebar from '../components/StudentSidebar';
-import axios from 'axios';
-import API_URL from '../../axiourl';
+import { useApiClient } from "../../utils/apiClient"
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-});
 
 function StudentAttendQuiz() {
+  const apiClient = useApiClient()
   const [loading, setLoading] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState({});
@@ -84,11 +77,7 @@ function StudentAttendQuiz() {
     };
 
     try {
-      const response = await apiClient.post(`/course/student-submit-quiz`, submissionData,{
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await apiClient.post(`/course/student-submit-quiz`, submissionData);
 
       if (response.status === 200) {
         alert('Quiz submitted successfully!');

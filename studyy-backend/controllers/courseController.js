@@ -6,21 +6,21 @@ const Quiz = require("../models/quizModel")
 const Class = require("../models/classModel")
 const Notification = require("../models/notificationModel")
 const sendEmail = require("../helpers/sendEmail")
-// const sendPushNotifications = require("../fire-base/sendPushNotifications")
+const HttpStatus = require("../helpers/httpStatus")
 
 exports.getStudents = async (req, res) => {
     try {
         let users = await User.find({ role: "student" })
-        res.status(200).json({ users, message: "student list for teacher" })
+        res.status(HttpStatus.OK).json({ users, message: "student list for teacher" })
     } catch (error) {
         console.error("get students error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
 exports.getCourses = async (req, res) => {
     const teacherId = req.user._id
-    console.log("teacher id from get courses:",teacherId)
+    console.log("teacher id from get courses:", teacherId)
     try {
         const courses = await Course.find({ teacher: teacherId })
             .populate('studentsEnrolled', 'name')
@@ -35,10 +35,10 @@ exports.getCourses = async (req, res) => {
             studentCount: course.studentsEnrolled.length || 0,
             assignmentCount: course.assignments.length || 0
         }));
-        res.status(200).json({ courses: coursesToSend, message: "Course list for teacher" });
+        res.status(HttpStatus.OK).json({ courses: coursesToSend, message: "Course list for teacher" });
     } catch (error) {
         console.error("Get courses error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 };
 
@@ -55,10 +55,10 @@ exports.createCourse = async (req, res) => {
     const { title, description, userId } = req.body;
     const teacher = await User.findById(userId)
     if (!userId) {
-        return res.status(400).json({ message: 'Unauthorized. Please log in.' });
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Unauthorized. Please log in.' });
     }
     if (teacher.isTeacherVerified === false) {
-        return res.status(400).json({ message: "Only verified teachers can create a course.  Wait for your verification!" });
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: "Only verified teachers can create a course.  Wait for your verification!" });
     }
     try {
         const newCourse = new Course({
@@ -68,10 +68,10 @@ exports.createCourse = async (req, res) => {
             teacher: userId,
         });
         await newCourse.save();
-        res.status(200).json({ message: 'Course created successfully', course: newCourse });
+        res.status(HttpStatus.OK).json({ message: 'Course created successfully', course: newCourse });
     } catch (error) {
         console.error(error.message);
-        res.status(500).json({ message: 'Server error' });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
     }
 }
 
@@ -80,13 +80,13 @@ exports.DeleteCourse = async (req, res) => {
     try {
         let course = await Course.findByIdAndDelete(courseId)
         if (!course) {
-            return res.status(404).json({ message: "course not found" });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "course not found" });
         }
         console.log("deleted course")
-        res.status(200).json({ message: "course deleted successfully" })
+        res.status(HttpStatus.OK).json({ message: "course deleted successfully" })
     } catch (error) {
         console.error("delete course error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -97,12 +97,12 @@ exports.getCourse = async (req, res) => {
         const modules = await Module.find({ course: courseId })
         const teacher = await User.findById(course.teacher)
         console.log("teacher from get course:", teacher)
-        if (!course) return res.status(404).json({ message: "no course found" })
+        if (!course) return res.status(HttpStatus.BAD_REQUEST).json({ message: "no course found" })
         console.log(course)
-        res.status(200).json({ course, modules, teacher, message: "fetched course succesfully" })
+        res.status(HttpStatus.OK).json({ course, modules, teacher, message: "fetched course succesfully" })
     } catch (error) {
         console.error("get course error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -111,11 +111,11 @@ exports.EditCourse = async (req, res) => {
     const { title, description } = req.body
     try {
         let updatedCourse = await Course.findByIdAndUpdate(courseId, { title, description }, { new: true })
-        if (!updatedCourse) res.status(404).json({ status: "notok", message: "course not found" })
-        res.status(200).json({ user: updatedCourse, message: "course updated successfully" });
+        if (!updatedCourse) res.status(HttpStatus.BAD_REQUEST).json({ status: "notok", message: "course not found" })
+        res.status(HttpStatus.OK).json({ user: updatedCourse, message: "course updated successfully" });
     } catch (error) {
         console.error("Update course error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -124,11 +124,11 @@ exports.createModule = async (req, res) => {
     const pdfFile = req.files['pdf'] ? req.files['pdf'][0] : null;
     const videoFile = req.files['video'] ? req.files['video'][0] : null
 
+    if (!pdfFile) {
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: "PDF file is required" })
+    }
     const pdfPath = pdfFile.path
     const videoPath = videoFile ? videoFile.path : null
-    if (!pdfPath) {
-        return res.status(400).json({ message: "PDF file is required" })
-    }
     try {
         const newModule = new Module({
             course: courseId,
@@ -138,10 +138,13 @@ exports.createModule = async (req, res) => {
             videoPath
         })
         await newModule.save()
-        res.status(200).json({ message: "Module created successfully", module: newModule })
+        const course = await Course.findById(courseId)
+        course.modules.push(newModule._id)
+        await course.save()
+        res.status(HttpStatus.OK).json({ message: "Module created successfully", module: newModule })
     } catch (error) {
         console.error("Error creating module:", error);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 };
 
@@ -150,13 +153,13 @@ exports.DeleteModule = async (req, res) => {
     try {
         let modulee = await Module.findByIdAndDelete(ModuleId)
         if (!modulee) {
-            return res.status(404).json({ message: "module not found" });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "module not found" });
         }
         console.log("deleted module")
-        res.status(200).json({ message: "module deleted successfully" })
+        res.status(HttpStatus.OK).json({ message: "module deleted successfully" })
     } catch (error) {
         console.error("delete module error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -171,11 +174,11 @@ exports.EditModule = async (req, res) => {
     if (videoFile) updateFields.videoPath = videoFile.path;
     try {
         let updatedModule = await Module.findByIdAndUpdate(moduleId, updateFields, { new: true })
-        if (!updatedModule) res.status(404).json({ status: "notok", message: "module not found" })
-        res.status(200).json({ module: updatedModule, message: "module updated successfully" });
+        if (!updatedModule) res.status(HttpStatus.BAD_REQUEST).json({ message: "module not found" })
+        res.status(HttpStatus.OK).json({ module: updatedModule, message: "module updated successfully" });
     } catch (error) {
         console.error("Update module error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -194,10 +197,10 @@ exports.AdmingetCourses = async (req, res) => {
                 }
             })
         )
-        res.status(200).json({ courses: courseToSend, message: "Courses for admin" })
+        res.status(HttpStatus.OK).json({ courses: courseToSend, message: "Courses for admin" })
     } catch (error) {
         console.error("Admin get courses error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -212,12 +215,12 @@ exports.AdmingetCourse = async (req, res) => {
             description: course.description,
             teacher: teacher.name
         }
-        if (!course) return res.status(404).json({ message: "no course found" })
+        if (!course) return res.status(HttpStatus.BAD_REQUEST).json({ message: "no course found" })
         console.log(course)
-        res.status(200).json({ course: courseToSend, modules, message: "fetched course succesfully" })
+        res.status(HttpStatus.OK).json({ course: courseToSend, modules, message: "fetched course succesfully" })
     } catch (error) {
         console.error("delete course error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -233,7 +236,7 @@ exports.GetAssignments = async (req, res) => {
         const course = await Course.findById({ _id: courseId })
         // console.log("course:" ,course)
         if (assignments.length === 0) {
-            return res.status(203).json({ message: 'No assignments found for this course.', course: course.title });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'No assignments found for this course.', course: course.title });
         }
 
         const assignmentWithCourse = assignments.map(assignment => ({
@@ -244,10 +247,10 @@ exports.GetAssignments = async (req, res) => {
             course: assignment.course ? assignment.course.title : "unknown assignment",
             submissions: assignment.submissions
         }))
-        res.status(200).json({ assignments: assignmentWithCourse, course: course.title });
+        res.status(HttpStatus.OK).json({ assignments: assignmentWithCourse, course: course.title });
     } catch (error) {
         console.error("get assignments error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -256,7 +259,7 @@ exports.CreateAssignment = async (req, res) => {
     try {
         const course = await Course.findById(courseId);
         if (!course) {
-            return res.status(404).json({ message: "Course not found." });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "Course not found." });
         }
         const newAssignment = new Assignment({
             title,
@@ -269,13 +272,13 @@ exports.CreateAssignment = async (req, res) => {
             course.assignments.push(newAssignment._id)
             await course.save()
         }
-        res.status(200).json({
+        res.status(HttpStatus.OK).json({
             message: "Assignment created successfully.",
             assignment: newAssignment
         });
     } catch (error) {
         console.error("Error creating assignment:", error);
-        res.status(500).json({ message: "An error occurred while creating the assignment." });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "An error occurred while creating the assignment." });
     }
 }
 
@@ -284,11 +287,11 @@ exports.EditAssignment = async (req, res) => {
     const { title, description, dueDate } = req.body
     try {
         let updatedAssignment = await Assignment.findByIdAndUpdate(_id, { title, description, dueDate }, { new: true })
-        if (!updatedAssignment) res.status(404).json({ status: "notok", message: "assignment not found" })
-        res.status(200).json({ status: "ok", assignment: updatedAssignment, message: "assignment updated successfully" });
+        if (!updatedAssignment) res.status(HttpStatus.BAD_REQUEST).json({ status: "notok", message: "assignment not found" })
+        res.status(HttpStatus.OK).json({ status: "ok", assignment: updatedAssignment, message: "assignment updated successfully" });
     } catch (error) {
         console.error("Update assignment error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -297,13 +300,13 @@ exports.DeleteAssignment = async (req, res) => {
     try {
         let assignment = await Assignment.findByIdAndDelete(Id)
         if (!assignment) {
-            return res.status(404).json({ message: "assignment not found" });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "assignment not found" });
         }
         console.log("deleted assignment")
-        res.status(200).json({ message: "assignment deleted successfully" })
+        res.status(HttpStatus.OK).json({ message: "assignment deleted successfully" })
     } catch (error) {
         console.error("delete assignment error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -317,10 +320,10 @@ exports.addQuiz = async (req, res) => {
             questions
         });
         await quiz.save();
-        res.status(200).json({ status: "ok", message: "Quiz created successfully" });
+        res.status(HttpStatus.OK).json({ status: "ok", message: "Quiz created successfully" });
     } catch (error) {
         console.error("Error adding quiz:", error.message);
-        res.status(500).json({ status: "error", message: "Failed to create quiz" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ status: "error", message: "Failed to create quiz" });
     }
 }
 
@@ -334,13 +337,13 @@ exports.getQuizzes = async (req, res) => {
         const course = await Course.findById(courseId)
         console.log("course from get Quiz:", course)
         if (!quizzes.length) {
-            return res.status(404).json({ status: "error", message: "No quizzes found for this course." });
+            return res.status(HttpStatus.BAD_REQUEST).json({ status: "error", message: "No quizzes found for this course." });
         }
 
-        res.status(200).json({ status: "ok", quizzes, courseName: course.title });
+        res.status(HttpStatus.OK).json({ status: "ok", quizzes, courseName: course.title });
     } catch (error) {
         console.error("Error retrieving quizzes:", error.message);
-        res.status(500).json({ status: "error", message: "Failed to retrieve quizzes." });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ status: "error", message: "Failed to retrieve quizzes." });
     }
 }
 
@@ -349,13 +352,13 @@ exports.DeleteQuiz = async (req, res) => {
     try {
         let quiz = await Quiz.findByIdAndDelete(Id)
         if (!quiz) {
-            return res.status(404).json({ message: "quiz not found" });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "quiz not found" });
         }
         console.log("deleted quiz")
-        res.status(200).json({ message: "quiz deleted successfully" })
+        res.status(HttpStatus.OK).json({ message: "quiz deleted successfully" })
     } catch (error) {
         console.error("delete quiz error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -364,10 +367,10 @@ exports.GetQuiz = async (req, res) => {
     try {
         const quiz = await Quiz.findById(quizId)
         if (!quiz) return res.status(404).json({ message: "quiz not found" });
-        res.status(200).json({ status: "ok", quiz });
+        res.status(HttpStatus.OK).json({ status: "ok", quiz });
     } catch (error) {
         console.error("get quiz error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -387,11 +390,11 @@ exports.EditQuiz = async (req, res) => {
         );
 
         if (!updatedQuiz) {
-            return res.status(404).json({ message: "Quiz not found" });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "Quiz not found" });
         }
         const teacher = await User.findById(teacherId)
         const course = await Course.findById(courseId)
-        if (!course) return res.status(404).json({ message: 'course not found' })
+        if (!course) return res.status(HttpStatus.BAD_REQUEST).json({ message: 'course not found' })
         const message = `Quiz ${title} has been updated, Please attend again!`
         const notification = new Notification({
             course: courseId,
@@ -400,10 +403,10 @@ exports.EditQuiz = async (req, res) => {
         })
         await notification.save()
 
-        res.status(200).json({ message: "Quiz updated successfully", quiz: updatedQuiz });
+        res.status(HttpStatus.OK).json({ message: "Quiz updated successfully", quiz: updatedQuiz });
     } catch (error) {
         console.error("Error updating quiz:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -428,10 +431,10 @@ exports.adminGetQuizzes = async (req, res) => {
         quizWithCourse.forEach((quiz, index) => {
             console.log(`Quiz ${index + 1} Questions:`, quiz.questions);
         })
-        res.status(200).json({ status: "ok", message: "fetched quizzes", quizzes: quizWithCourse })
+        res.status(HttpStatus.OK).json({ status: "ok", message: "fetched quizzes", quizzes: quizWithCourse })
     } catch (error) {
         console.error("Error admin get quizzes:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -440,13 +443,13 @@ exports.adminDeleteQuiz = async (req, res) => {
     try {
         let quiz = await Quiz.findByIdAndDelete(Id)
         if (!quiz) {
-            return res.status(404).json({ message: "quiz not found" });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "quiz not found" });
         }
         console.log("deleted quiz")
-        res.status(200).json({ message: "quiz deleted successfully" })
+        res.status(HttpStatus.OK).json({ message: "quiz deleted successfully" })
     } catch (error) {
         console.error("delete quiz error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -465,12 +468,12 @@ exports.adminGetAssignments = async (req, res) => {
         }))
 
         if (assignmentWithCourse.length === 0) {
-            return res.status(404).json({ message: 'No assignments found.' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'No assignments found.' });
         }
-        res.status(200).json({ status: 'ok', assignments: assignmentWithCourse });
+        res.status(HttpStatus.OK).json({ status: 'ok', assignments: assignmentWithCourse });
     } catch (error) {
         console.error("get assignments error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -479,13 +482,13 @@ exports.adminDeleteAssignment = async (req, res) => {
     try {
         let assignment = await Assignment.findByIdAndDelete(Id)
         if (!assignment) {
-            return res.status(404).json({ message: "assignment not found" });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "assignment not found" });
         }
         console.log("deleted assignment")
-        res.status(200).json({ message: "assignment deleted successfully" })
+        res.status(HttpStatus.OK).json({ message: "assignment deleted successfully" })
     } catch (error) {
         console.error("delete assignment error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -496,7 +499,7 @@ exports.studentEnrollment = async (req, res) => {
     try {
         const student = await User.findById(studentId)
         const course = await Course.findById(courseId)
-        if (!student || !course) return res.status(404).json({ message: "Course or student not found" })
+        if (!student || !course) return res.status(HttpStatus.BAD_REQUEST).json({ message: "Course or student not found" })
 
         if (!course.studentsEnrolled.includes(studentId)) {
             course.studentsEnrolled.push(studentId)
@@ -506,10 +509,10 @@ exports.studentEnrollment = async (req, res) => {
             student.enrolledCourses.push(courseId)
             await student.save()
         }
-        res.status(200).json({ message: "student enrollment success" })
+        res.status(HttpStatus.OK).json({ message: "student enrollment success" })
     } catch (error) {
         console.error("student enrollement error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -520,7 +523,7 @@ exports.studentGetAssignments = async (req, res) => {
         const student = await User.findById(studentId).populate('enrolledCourses');
 
         if (!student) {
-            return res.status(404).json({ message: 'Student not found' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Student not found' });
         }
         const courseIds = student.enrolledCourses.map(course => course._id);
         const assignments = await Assignment.find({ course: { $in: courseIds } })
@@ -539,10 +542,10 @@ exports.studentGetAssignments = async (req, res) => {
             submissions: assignment.submissions
         }))
         console.log("assignments for student:", assignments);
-        res.status(200).json({ message: "fetched the assignments", assignments: assignmentWithCourse });
+        res.status(HttpStatus.OK).json({ message: "fetched the assignments", assignments: assignmentWithCourse });
     } catch (error) {
         console.error("Error fetching assignments:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -552,17 +555,17 @@ exports.studentsubmitAssignment = async (req, res) => {
     try {
         const assignment = await Assignment.findById(assignmentId);
         if (!assignment) {
-            return res.status(203).json({ message: 'Assignment not found' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Assignment not found' });
         }
         const currentDate = new Date();
         const dueDate = new Date(assignment.dueDate);
 
         if (currentDate > dueDate) {
-            return res.status(203).json({ message: 'The assignment due date has passed. You cannot submit the assignment.' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'The assignment due date has passed. You cannot submit the assignment.' });
         }
 
         if (!req.file) {
-            return res.status(203).json({ message: 'File is required for submission' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'File is required for submission' });
         }
 
         assignment.submissions.push({
@@ -572,10 +575,10 @@ exports.studentsubmitAssignment = async (req, res) => {
 
         await assignment.save();
 
-        res.status(200).json({ message: 'Assignment submitted successfully' });
+        res.status(HttpStatus.OK).json({ message: 'Assignment submitted successfully' });
     } catch (error) {
         console.error('Error submitting assignment:', error.message);
-        res.status(500).json({ message: 'Server error' });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
     }
 };
 
@@ -586,7 +589,7 @@ exports.studentGetQuizzes = async (req, res) => {
     try {
         const student = await User.findById(studentId).populate('enrolledCourses');
         if (!student) {
-            return res.status(404).json({ message: 'Student not found' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Student not found' });
         }
         const courseIds = student.enrolledCourses.map(course => course._id);
         const quizzes = await Quiz.find({ course: { $in: courseIds } })
@@ -612,10 +615,10 @@ exports.studentGetQuizzes = async (req, res) => {
             };
         });
         console.log("Quiz data for student:", quizWithCourse);
-        res.status(200).json({ message: "Fetched the quizzes", quizzes: quizWithCourse });
+        res.status(HttpStatus.OK).json({ message: "Fetched the quizzes", quizzes: quizWithCourse });
     } catch (error) {
         console.error("Error fetching quizzes:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 };
 
@@ -623,14 +626,14 @@ exports.enrolledCourses = async (req, res) => {
     const userId = req.params.id
     try {
         const student = await User.findById(userId).populate('enrolledCourses')
-        if (!student) return res.status(404).json({ message: "user not found" })
+        if (!student) return res.status(HttpStatus.BAD_REQUEST).json({ message: "user not found" })
         const courseIds = student.enrolledCourses.map(course => course._id)
         const enrolledCourses = student.enrolledCourses
         console.log("enrolled course:", enrolledCourses)
-        res.status(200).json({ courses: enrolledCourses, message: "fetched enrolled courses" })
+        res.status(HttpStatus.OK).json({ courses: enrolledCourses, message: "fetched enrolled courses" })
     } catch (error) {
         console.error("Error fetching enrolled courses:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -640,7 +643,7 @@ exports.SubmitQuiz = async (req, res) => {
 
         const quiz = await Quiz.findById(quizId);
         if (!quiz) {
-            return res.status(404).json({ message: 'Quiz not found' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Quiz not found' });
         }
 
         const submission = {
@@ -654,10 +657,10 @@ exports.SubmitQuiz = async (req, res) => {
 
         await quiz.save();
 
-        res.status(200).json({ message: 'Quiz submitted successfully', submission });
+        res.status(HttpStatus.OK).json({ message: 'Quiz submitted successfully', submission });
     } catch (error) {
         console.error('Error submitting quiz:', error);
-        res.status(500).json({ message: 'Failed to submit quiz' });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Failed to submit quiz' });
     }
 }
 
@@ -665,11 +668,11 @@ exports.getClasses = async (req, res) => {
     const courseId = req.params.id
     try {
         const classes = await Class.find({ course: courseId });
-        if (classes.length === 0) return res.status(400).json({ message: "No classes found" })
-        res.status(200).json({ status: 'ok', classes });
+        if (classes.length === 0) return res.status(HttpStatus.BAD_REQUEST).json({ message: "No classes found" })
+        res.status(HttpStatus.OK).json({ status: 'ok', classes });
     } catch (error) {
         console.log(error);
-        res.status(500).json({ status: 'error', message: 'Failed to fetch classes' });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ status: 'error', message: 'Failed to fetch classes' });
     }
 }
 
@@ -688,10 +691,10 @@ exports.createClass = async (req, res) => {
         console.log("new class:", newClass)
 
         await newClass.save();
-        res.status(200).json({ status: 'ok', message: 'Class added successfully' });
+        res.status(HttpStatus.OK).json({ status: 'ok', message: 'Class added successfully' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ status: 'error', message: 'Failed to add class' });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ status: 'error', message: 'Failed to add class' });
     }
 }
 
@@ -702,12 +705,12 @@ exports.studentGetClasses = async (req, res) => {
         const student = await User.findById(studentId).populate('enrolledCourses');
 
         if (!student) {
-            return res.status(404).json({ message: 'Student not found' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Student not found' });
         }
 
         const courseIds = student.enrolledCourses.map(course => course._id);
 
-        const classes = await Class.find({ course: { $in: courseIds },status: { $ne: "Ended" } })
+        const classes = await Class.find({ course: { $in: courseIds }, status: { $ne: "Ended" } })
             .populate({
                 path: "course",
                 select: "title"
@@ -725,10 +728,10 @@ exports.studentGetClasses = async (req, res) => {
             status: cls.status
         }))
         // console.log("classwithcourse for student:", ClassWithCourse);
-        res.status(200).json({ message: "fetched the classes", classes: ClassWithCourse });
+        res.status(HttpStatus.OK).json({ message: "fetched the classes", classes: ClassWithCourse });
     } catch (error) {
         console.error("Error fetching classes:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -737,7 +740,7 @@ exports.sendNotification = async (req, res) => {
     try {
         const teacher = await User.findById(userId)
         const course = await Course.findById(courseId)
-        if (!course) return res.status(404).json({ message: 'course not found' })
+        if (!course) return res.status(HttpStatus.BAD_REQUEST).json({ message: 'course not found' })
         const notification = new Notification({
             course: courseId,
             message: message,
@@ -745,10 +748,10 @@ exports.sendNotification = async (req, res) => {
         })
         await notification.save()
         // io.to(courseId).emit('new-notification', notification)
-        res.status(200).json({ message: 'Notification sent successfully', notification })
+        res.status(HttpStatus.OK).json({ message: 'Notification sent successfully', notification })
     } catch (error) {
         console.error("Error sending notification:", error.message);
-        res.status(500).json({ message: 'Server error' });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
     }
 }
 
@@ -759,7 +762,7 @@ exports.getNotifications = async (req, res) => {
         const student = await User.findById(studentId).populate('enrolledCourses', '_id');
 
         if (!student) {
-            return res.status(404).json({ message: 'Student not found' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Student not found' });
         }
 
         const courseIds = student.enrolledCourses.map(course => course._id);
@@ -777,13 +780,13 @@ exports.getNotifications = async (req, res) => {
         }));
 
         // console.log(mappedNotifications)
-        res.status(200).json({
+        res.status(HttpStatus.OK).json({
             notifications: mappedNotifications,
             message: 'Fetched notifications successfully',
         });
     } catch (error) {
         console.error('Error fetching notifications:', error.message);
-        res.status(500).json({ message: 'Server error' });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
     }
 };
 
@@ -796,10 +799,10 @@ exports.markNotificationsAsRead = async (req, res) => {
             { $addToSet: { read: studentId } }
         );
 
-        res.status(200).json({ message: 'Notifications marked as read' });
+        res.status(HttpStatus.OK).json({ message: 'Notifications marked as read' });
     } catch (error) {
         console.error('Error marking notifications as read:', error.message);
-        res.status(500).json({ message: 'Server error' });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
     }
 };
 
@@ -818,13 +821,13 @@ exports.addClassPeerId = async (req, res) => {
 
         // If the class with the provided ID is not found
         if (!updatedClass) {
-            return res.status(404).json({ message: "Class not found" });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "Class not found" });
         }
 
         const course = await Course.findById(updatedClass.course);
         // console.log("course from addclasspeerid:",course)
         if (!course) {
-            return res.status(404).json({ message: "Course not found" });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "Course not found" });
         }
 
         const notificationMessage = `${course.title} - Live class started`;
@@ -837,10 +840,10 @@ exports.addClassPeerId = async (req, res) => {
 
         await notification.save();
 
-        res.status(200).json({ message: "Class updated successfully and notification sent", class: updatedClass, notification });
+        res.status(HttpStatus.OK).json({ message: "Class updated successfully and notification sent", class: updatedClass, notification });
     } catch (error) {
         console.error("Error updating class:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 };
 
@@ -856,13 +859,13 @@ exports.EditClass = async (req, res) => {
         );
 
         if (!updatedClass) {
-            return res.status(404).json({ message: "class not found" });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "class not found" });
         }
 
-        res.status(200).json({ status: "ok", message: "class updated successfully" });
+        res.status(HttpStatus.OK).json({ status: "ok", message: "class updated successfully" });
     } catch (error) {
         console.error("Error updating class:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 };
 
@@ -871,13 +874,13 @@ exports.deleteClass = async (req, res) => {
     try {
         let classToDelete = await Class.findByIdAndDelete(ClassId)
         if (!classToDelete) {
-            return res.status(404).json({ message: "class not found" });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: "class not found" });
         }
         console.log("deleted class")
-        res.status(200).json({ status: "ok", message: "class deleted successfully" })
+        res.status(HttpStatus.OK).json({ status: "ok", message: "class deleted successfully" })
     } catch (error) {
         console.error("delete class error:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
 }
 
@@ -888,7 +891,7 @@ exports.getAssignmentSubmissions = async (req, res) => {
             .populate('submissions.student', 'name');
 
         if (!assignment) {
-            return res.status(404).json({ message: 'Assignment not found' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Assignment not found' });
         }
 
         const submissions = assignment.submissions.map(submission => ({
@@ -897,10 +900,10 @@ exports.getAssignmentSubmissions = async (req, res) => {
             submittedAt: submission.submittedAt,
         }))
 
-        res.status(200).json({ submissions });
+        res.status(HttpStatus.OK).json({ submissions });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
     }
 }
 
@@ -911,7 +914,7 @@ exports.getQuizSubmissions = async (req, res) => {
         const quiz = await Quiz.findById(quizId).populate('submissions.student', 'name');
 
         if (!quiz) {
-            return res.status(404).json({ message: 'Quiz not found' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Quiz not found' });
         }
 
         const submissions = quiz.submissions.map(submission => ({
@@ -920,10 +923,10 @@ exports.getQuizSubmissions = async (req, res) => {
             submittedAt: submission.submittedAt,
         }));
 
-        res.status(200).json({ submissions });
+        res.status(HttpStatus.OK).json({ submissions });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
     }
 };
 
@@ -933,14 +936,15 @@ exports.getCourseStudents = async (req, res) => {
         const course = await Course.findById(courseId).populate("studentsEnrolled")
 
         if (!course) {
-            return res.status(404).json({ message: 'Course not found' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Course not found' });
         }
 
-        return res.status(200).json({
+        return res.status(HttpStatus.OK).json({
             students: course.studentsEnrolled
         });
     } catch (error) {
-
+        console.error(error);
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Server error' });
     }
 }
 
@@ -949,7 +953,7 @@ exports.sendEmailNotification = async (req, res) => {
 
     try {
         const course = await Course.findById(courseId).populate('studentsEnrolled');
-        if (!course) return res.status(404).json({ error: 'Course not found' });
+        if (!course) return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Course not found' });
 
         const studentEmails = course.studentsEnrolled.map(student => student.email);
 
@@ -963,16 +967,16 @@ exports.sendEmailNotification = async (req, res) => {
 
         if (failedEmails.length > 0) {
             console.error('Failed to send emails to some recipients:', failedEmails);
-            return res.status(500).json({
+            return res.status(HttpStatus.BAD_REQUEST).json({
                 message: 'Some emails failed to send.',
                 failedCount: failedEmails.length,
             });
         }
         console.log("email notification sent succesfully")
-        res.status(200).json({ message: 'Email notifications sent successfully!' });
+        res.status(HttpStatus.OK).json({ message: 'Email notifications sent successfully!' });
     } catch (error) {
         console.error('Error sending email notifications:', error);
-        res.status(500).json({ error: 'Failed to send email notifications.' });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Failed to send email notifications.' });
     }
 }
 
@@ -982,10 +986,10 @@ exports.updateClassStatusToEnded = async (req, res) => {
         const selectedClass = await Class.findById(classId)
         selectedClass.status = "Ended"
         await selectedClass.save()
-        res.status(200).json({ message: "Class Status updated" })
+        res.status(HttpStatus.OK).json({ message: "Class Status updated" })
     } catch (error) {
         console.error('Error setting class status as ended:', error);
-        res.status(500).json({ error: 'Error setting class status as ended.' });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Error setting class status as ended.' });
     }
 }
 
@@ -994,10 +998,21 @@ exports.dashboardData = async (req, res) => {
         const userCount = await User.countDocuments()
         const courseCount = await Course.countDocuments()
 
-        res.status(200).json({ userCount, courseCount })
+        res.status(HttpStatus.OK).json({ userCount, courseCount })
     } catch (error) {
         console.error('Error getting dashboard data:', error);
-        res.status(500).json({ error: 'Error getting dashboard data.' });
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Error getting dashboard data.' });
     }
 }
 
+exports.getModuleData = async (req, res) => {
+    const moduleId = req.params.id
+    try {
+        const moduleData = await Module.findById(moduleId)
+        if (!moduleData) return res.status(HttpStatus.BAD_REQUEST).json({ message: "No module found" })
+        res.status(HttpStatus.OK).json({ message: "Fetched module data", module: moduleData })
+    } catch (error) {
+        console.error('Error getting dashboard data:', error);
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Error getting dashboard data.' });
+    }
+}

@@ -2,18 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import axios from 'axios';
-import API_URL from '../../axiourl';
+import { useApiClient } from "../../utils/apiClient"
 import { useUser } from "../../UserContext"
 
-const apiClient = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-});
 
 function AdminHome() {
+    const apiClient = useApiClient()
     const navigate = useNavigate()
     const { user,token } = useUser();
     const [users, setUsers] = useState([])
@@ -38,12 +32,7 @@ function AdminHome() {
         }
         const getUsers = async () => {
             try {
-                const response = await apiClient.get('/user/get-users', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-
+                const response = await apiClient.get('/user/get-users');
                 const data = response.data;
                 setUsers(data.users)
                 setFilteredUsers(data.users)
@@ -95,11 +84,7 @@ function AdminHome() {
     // }
     const handleDelete = async () => {
         try {
-            const response = await apiClient.delete(`/user/admin-delete-user/${selectedUser._id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.delete(`/user/admin-delete-user/${selectedUser._id}`);
 
             if (response.status === 200) {
                 setToastMessage("User deleted successfully");
@@ -119,11 +104,7 @@ function AdminHome() {
     const handleBlock = async () => {
 
         try {
-            const response = await apiClient.put(`/user/admin-block-user/${selectedUser._id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await apiClient.put(`/user/admin-block-user/${selectedUser._id}`);
 
             const data = response.data;
             if (response.status === 200) {
