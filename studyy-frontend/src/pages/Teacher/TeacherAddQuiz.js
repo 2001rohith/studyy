@@ -4,20 +4,18 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
-
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const TeacherAddQuiz = () => {
     const apiClient = useApiClient()
-    const { user,token } = useUser();
+    const { user, token } = useUser();
     const location = useLocation();
     const navigate = useNavigate();
     const cId = location.state?.id;
-    console.log("cId from create quiz:", cId)
     const [courseId, setCourseId] = useState(cId);
-    console.log("courseid from create quiz:", courseId)
     const [quizTitle, setQuizTitle] = useState('');
-    // const [questions, setQuestions] = useState([{ question: '', option1: '', option2: '', answer: '' }]);
-    const [questions, setQuestions] = useState([{ question: '', options: ['', ''], answer: '' }])
+    const [questions, setQuestions] = useState([{ question: '', options: ['', ''], answer: '' }]);
     const [message, setMessage] = useState('Fill Fields!');
 
     const handleQuizTitleChange = (e) => setQuizTitle(e.target.value);
@@ -30,6 +28,27 @@ const TeacherAddQuiz = () => {
         } else {
             updatedQuestions[index][field] = value;
         }
+        
+        // Check for duplicates when question field is changed
+        if (field === 'question' && value.trim() !== '') {
+            const isDuplicate = questions.some(
+                (q, i) => i !== index && q.question.trim().toLowerCase() === value.trim().toLowerCase()
+            );
+            
+            if (isDuplicate) {
+                toast.error(`Question "${value}" already exists!`, {
+                    position: "bottom-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                });
+                // Clear the duplicate question
+                updatedQuestions[index].question = '';
+            }
+        }
+        
         setQuestions(updatedQuestions);
     };
 
@@ -47,25 +66,51 @@ const TeacherAddQuiz = () => {
 
         const trimmedTitle = quizTitle.trim();
         if (!trimmedTitle) {
-            setMessage("Please provide a valid quiz title.");
+            toast.error("Please provide a valid quiz title.");
+            return;
+        }
+
+        // Check for duplicate questions before submission
+        const questionTexts = questions.map(q => q.question.trim().toLowerCase());
+        const hasDuplicates = questionTexts.some(
+            (question, index) => questionTexts.indexOf(question) !== index
+        );
+
+        if (hasDuplicates) {
+            toast.error("Please remove duplicate questions before submitting.");
+            return;
+        }
+
+        // Validate that all questions, options, and answers are filled
+        const hasEmptyFields = questions.some(
+            q => !q.question.trim() || 
+                 !q.options[0].trim() || 
+                 !q.options[1].trim() || 
+                 !q.answer.trim()
+        );
+
+        if (hasEmptyFields) {
+            toast.error("Please fill in all questions, options, and answers.");
             return;
         }
 
         const quizData = { title: trimmedTitle, courseId, questions };
 
         try {
-            
             const response = await apiClient.post(`/course/add-quiz`, quizData);
-
             const data = response.data;
+            
             if (response.status === 200) {
-                setMessage(data.message);
+                toast.success(data.message);
+                setTimeout(() => {
+                    goback();
+                }, 2000);
             } else {
-                setMessage(data.message || "Error occurred while creating the quiz.");
+                toast.error(data.message || "Error occurred while creating the quiz.");
             }
         } catch (error) {
             console.error('Error creating quiz:', error);
-            setMessage("Server error. Please try again.");
+            toast.error("Server error. Please try again.");
         }
     };
 
@@ -73,12 +118,9 @@ const TeacherAddQuiz = () => {
         navigate("/teacher-view-quizzes", { state: { id: courseId } });
     };
 
-
-
-
-
     return (
         <>
+            <ToastContainer />
             <div className="row">
                 <div className="col text-light side-bar">
                     <TeacherSidebar />
@@ -91,22 +133,6 @@ const TeacherAddQuiz = () => {
                     <div className="row add-course-forms">
                         <div className="col-md-6 text-dark first-form">
                             <h5 className="mb-5">Create a Quiz</h5>
-                            {message && <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="exampleModalLabel">Alert!</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            {message}
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" onClick={goback} class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>}
                             <form onSubmit={handleSubmit}>
                                 <input
                                     className="form-control mb-3"
@@ -160,7 +186,7 @@ const TeacherAddQuiz = () => {
                                     </div>
                                 ))}
 
-                                <button className="btn table-button" type="submit" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                                <button className="btn table-button" type="submit">
                                     Save
                                 </button>
                             </form>

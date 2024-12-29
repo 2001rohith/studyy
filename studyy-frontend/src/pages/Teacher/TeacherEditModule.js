@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
-
+import { Upload } from 'lucide-react';
 
 
 
@@ -16,23 +16,38 @@ const TeacherEditModule = () => {
     const location = useLocation()
     const mod = location.state?.module
     const course = location.state?.course
-    const [moduleId,setModuleId] = useState(location.state?.module._id)
+    const [moduleId, setModuleId] = useState(location.state?.module._id)
     // const moduleId = location.state?.module._id
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
 
     const [pdfFile, setPdfFile] = useState(null);
-    const [videoFile, setVideFile] = useState(null)
+    const [videoFile, setVideoFile] = useState(null)
     const [modulee, setModule] = useState()
     const [showModal, setShowModal] = useState(false)
     const [contentType, setContentType] = useState("")
     const [loading, setLoading] = useState(false);
+    const [showToast, setShowToast] = useState(false);
+    const [message, setMessage] = useState("");
+    const [uploadProgress, setUploadProgress] = useState({
+        pdf: 0,
+        video: 0
+    });
+    const [fileNames, setFileNames] = useState({
+        pdf: '',
+        video: ''
+    });
 
-    const handleFileChange = (e) => {
-        setPdfFile(e.target.files[0]);
-    };
-    const handleVideoFileChange = (e) => {
-        setVideFile(e.target.files[0])
+    const handleFileChange = (e, type) => {
+        const file = e.target.files[0];
+        if (type === 'pdf') {
+            setPdfFile(file);
+            setFileNames(prev => ({ ...prev, pdf: file.name }));
+        } else {
+            setVideoFile(file);
+            setFileNames(prev => ({ ...prev, video: file.name }));
+        }
+        setUploadProgress(prev => ({ ...prev, [type]: 0 }));
     }
 
     useEffect(() => {
@@ -40,13 +55,13 @@ const TeacherEditModule = () => {
             try {
                 const response = await apiClient.get(`/course/get-module-data/${moduleId}`)
                 const data = response.data
-                console.log("data:",data)
+                console.log("data:", data)
                 if (response.status === 200) {
                     console.log("module data:", data.module)
                     setModule(data.module)
                     setTitle(data.module.title)
                     setDescription(data.module.description)
-                    
+
                 }
             } catch (error) {
                 console.log("Error fetching module:", error);
@@ -60,23 +75,40 @@ const TeacherEditModule = () => {
         const formData = new FormData();
         formData.append('title', title);
         formData.append('description', description);
-        formData.append('pdf', pdfFile);
-        formData.append("video", videoFile)
+        if (pdfFile) formData.append('pdf', pdfFile);
+        if (videoFile) formData.append("video", videoFile);
 
         try {
             setLoading(true);
-
-            const response = await apiClient.put(`/course/teacher-edit-module/${moduleId}`, formData);
+            const response = await apiClient.put(
+                `/course/teacher-edit-module/${moduleId}`, 
+                formData,
+                {
+                    onUploadProgress: (progressEvent) => {
+                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        setUploadProgress(prev => ({
+                            pdf: pdfFile ? percentCompleted : 0,
+                            video: videoFile ? percentCompleted : 0
+                        }));
+                    }
+                }
+            );
 
             const data = response.data;
             if (response.status === 200) {
-                alert("Module updated successfully");
-                navigate("/teacher-edit-course", { state: { course } })
+                setMessage("Module updated successfully");
+                setShowToast(true);
+                setTimeout(() => {
+                    navigate("/teacher-edit-course", { state: { course } });
+                }, 2000);
             } else {
-                alert(data.message || "Failed to add module");
+                setMessage(data.message || "Failed to update module");
+                setShowToast(true);
             }
         } catch (error) {
             console.log("Error uploading module", error);
+            setMessage("Error updating module. Please try again.");
+            setShowToast(true);
         } finally {
             setLoading(false);
         }
@@ -115,31 +147,112 @@ const TeacherEditModule = () => {
                     <div className='row content forms'>
                         <div className='other-forms'>
                             <h5 className='mb-5'>Edit Module</h5>
-                            < >
+                            <form onSubmit={handleSubmit}>
                                 <label>Title:</label>
-                                <input className='form-control' type="text" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                                <input 
+                                    className='form-control' 
+                                    type="text" 
+                                    placeholder="Title" 
+                                    value={title} 
+                                    onChange={(e) => setTitle(e.target.value)} 
+                                    required 
+                                    disabled={loading}
+                                />
                                 <label>Description:</label>
-                                <textarea className='form-control' placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} required />
-                                <button className='btn table-button me-2' onClick={handleViewPDF}>Pdf</button>
-                                <button className='btn table-button' onClick={handleViewVideo}>Video</button>
-                                <br />
-                                <label className='mt-2'>Upload PDF:</label>
-                                <input
-                                    className='form-control mt-2'
-                                    type="file"
-                                    accept="application/pdf"
-                                    onChange={handleFileChange}
+                                <textarea 
+                                    className='form-control' 
+                                    placeholder="Description" 
+                                    value={description} 
+                                    onChange={(e) => setDescription(e.target.value)} 
+                                    required 
+                                    disabled={loading}
+                                />
+                                <button 
+                                    type="button"
+                                    className='btn table-button me-2' 
+                                    onClick={handleViewPDF}
+                                    disabled={loading}
+                                >
+                                    Pdf
+                                </button>
+                                <button 
+                                    type="button"
+                                    className='btn table-button' 
+                                    onClick={handleViewVideo}
+                                    disabled={loading}
+                                >
+                                    Video
+                                </button>
+                                
+                                {/* PDF Upload Section */}
+                                <div className="mb-3 mt-2">
+                                    <label>Upload PDF:</label>
+                                    <div className="position-relative">
+                                        <input
+                                            className='form-control'
+                                            type="file"
+                                            accept="application/pdf"
+                                            onChange={(e) => handleFileChange(e, 'pdf')}
+                                            disabled={loading}
+                                        />
+                                        {loading && fileNames.pdf && (
+                                            <div className="progress mt-2">
+                                                <div 
+                                                    className="progress-bar progress-bar-striped progress-bar-animated" 
+                                                    role="progressbar" 
+                                                    style={{ width: `${uploadProgress.pdf}%` }}
+                                                    aria-valuenow={uploadProgress.pdf} 
+                                                    aria-valuemin="0" 
+                                                    aria-valuemax="100"
+                                                >
+                                                    {uploadProgress.pdf}%
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
 
-                                />
-                                <label>Upload Video:</label>
-                                <input
-                                    className='form-control'
-                                    type="file"
-                                    accept="video/mp4"
-                                    onChange={handleVideoFileChange}
-                                />
-                                <button className='btn btn-secondary button mb-3' onClick={handleSubmit}>Save</button>
-                            </>
+                                {/* Video Upload Section */}
+                                <div className="mb-3">
+                                    <label>Upload Video:</label>
+                                    <div className="position-relative">
+                                        <input
+                                            className="form-control"
+                                            type="file"
+                                            accept="video/mp4"
+                                            onChange={(e) => handleFileChange(e, 'video')}
+                                            disabled={loading}
+                                        />
+                                        {loading && fileNames.video && (
+                                            <div className="progress mt-2">
+                                                <div 
+                                                    className="progress-bar progress-bar-striped progress-bar-animated" 
+                                                    role="progressbar" 
+                                                    style={{ width: `${uploadProgress.video}%` }}
+                                                    aria-valuenow={uploadProgress.video} 
+                                                    aria-valuemin="0" 
+                                                    aria-valuemax="100"
+                                                >
+                                                    {uploadProgress.video}%
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <button 
+                                    className='btn btn-secondary button mb-3' 
+                                    type="submit"
+                                    disabled={loading}
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Upload className="inline-block mr-2" size={16} />
+                                            Updating...
+                                        </>
+                                    ) : 'Save'}
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>

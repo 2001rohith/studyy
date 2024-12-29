@@ -8,21 +8,13 @@ const { createCourse, getCourses, DeleteCourse, getCourse, EditCourse,
     getQuizzes, DeleteQuiz, GetQuiz, EditQuiz, adminGetQuizzes, adminDeleteQuiz,
     adminGetAssignments, adminDeleteAssignment, studentEnrollment,
     studentGetAssignments, studentsubmitAssignment, studentGetQuizzes,
-    enrolledCourses, SubmitQuiz, getClasses, createClass,
-    studentGetClasses,
-    sendNotification,
-    getNotifications,
-    markNotificationsAsRead,
-    addClassPeerId,
-    EditClass,
-    deleteClass,
-    getAssignmentSubmissions,
-    getQuizSubmissions,
-    getCourseStudents,
-    sendEmailNotification,
-    updateClassStatusToEnded,
-    getModuleData } = require("../controllers/courseController")
+    enrolledCourses, SubmitQuiz, getClasses, createClass,studentGetClasses,sendNotification,getNotifications,
+    markNotificationsAsRead,addClassPeerId,EditClass,deleteClass,
+    getAssignmentSubmissions,getQuizSubmissions,getCourseStudents,
+    sendEmailNotification,updateClassStatusToEnded,getModuleData } = require("../controllers/courseController")
 const { homeCourses } = require("../controllers/studentController")
+
+
 
 //Teacher routes
 router.post("/create", createCourse)
@@ -65,7 +57,8 @@ router.get("/admin-get-assignments", adminGetAssignments)
 router.delete("/admin-delete-assignment/:id", adminDeleteAssignment)
 
 //Student routes
-router.post("/student-enroll", studentEnrollment)
+
+
 router.get("/enrolled-courses/:id", enrolledCourses)
 router.get("/student-get-assignments/:id", studentGetAssignments)
 router.post("/submit-assignment/:id", upload.single("file"), studentsubmitAssignment)
