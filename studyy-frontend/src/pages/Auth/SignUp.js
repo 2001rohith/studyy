@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApiClient } from "../../utils/apiClient"
+import API_URL from '../../axiourl';
 
 function SignUp() {
     const apiClient = useApiClient()

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar2 from '../components/Sidebar2';
 import { useApiClient } from "../../utils/apiClient"
 import { useUser } from "../../UserContext"
+import API_URL from '../../axiourl';
 
 
 function AdminTeachers() {
