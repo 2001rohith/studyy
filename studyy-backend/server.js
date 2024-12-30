@@ -10,7 +10,7 @@ const http = require("http")
 // const { Server } = require("socket.io");
 
 dotenv.config();
-const PORT = 8000;
+const PORT = process.env.PORT_NUMBER
 
 //MongoDB connection
 mongoose.connect(process.env.MONGO_URL)
@@ -57,12 +57,12 @@ const io = require("socket.io")(httpServer, {
 });
 
 io.on("connection", (socket) => {
-    console.log("A user connected:", socket.id);
+    console.log("A user connected:", socket.id)
 
     socket.on('send-message', ({ classId, userName, message }) => {
-        console.log(`Message from ${userName} in class ${classId}: ${message}`);
+        console.log(`Message from ${userName} in class ${classId}: ${message}`)
 
-        io.to(classId).emit('receive-message', { userName, message });
+        io.to(classId).emit('receive-message', { userName, message })
     });
 
     socket.on('end-live-class', ({ classId }) => {
@@ -79,6 +79,18 @@ io.on("connection", (socket) => {
         console.log(`Notification added for course: ${courseId} by teacher: ${teacherId}`);
 
         io.emit("newNotification", { courseId });
+    });
+
+    socket.on('student-disconnected', ({ peerId, classId }) => {
+        socket.to(classId).emit('student-disconnected', peerId);
+    });
+
+    socket.on('teacher-disconnected', ({ classId }) => {
+        socket.to(classId).emit('teacher-ended-class');
+    });
+
+    socket.on('leave-class', (classId) => {
+        socket.leave(classId);
     });
 
     socket.on("disconnect", () => {

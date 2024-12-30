@@ -198,7 +198,14 @@ function StudentLiveClass() {
 
     const handleEndClass = async () => {
         try {
-            // socket.emit('student-disconnected', peerId)
+            // 1. Notify teacher through socket
+            socket.emit('student-disconnected', { 
+                peerId,
+                classId, // Make sure classId is available in scope
+                studentId: user.id // Assuming you have user context
+            });
+    
+            // 2. Clean up media streams
             if (stream) {
                 stream.getTracks().forEach((track) => {
                     track.stop();
@@ -206,33 +213,56 @@ function StudentLiveClass() {
                 });
                 setStream(null);
             }
-
+    
+            // 3. Clean up peer connections
             if (peerInstance.current) {
-                if (peerInstance.current._connections) {
-                    Object.values(peerInstance.current._connections).forEach((connections) => {
+                // Close all media calls
+                if (peerInstance.current.connections) {
+                    Object.keys(peerInstance.current.connections).forEach((peerId) => {
+                        const connections = peerInstance.current.connections[peerId];
                         connections.forEach((conn) => {
-                            if (conn.close) {
-                                conn.close();
-                                console.log(`Closed connection: ${conn.peer}`);
+                            // Check if it's a MediaConnection (call)
+                            if (conn.peerConnection) {
+                                conn.peerConnection.close();
                             }
+                            conn.close();
+                            console.log(`Closed connection to peer: ${peerId}`);
                         });
                     });
                 }
-
-                peerInstance.current.disconnect();
+    
+                // Destroy the peer instance completely
+                peerInstance.current.destroy();
                 peerInstance.current = null;
             }
-
+    
+            // 4. Clean up video elements
             if (currentUserVideoRef.current) {
+                const stream = currentUserVideoRef.current.srcObject;
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
                 currentUserVideoRef.current.srcObject = null;
             }
+    
             if (remoteVideoRef.current) {
+                const stream = remoteVideoRef.current.srcObject;
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
                 remoteVideoRef.current.srcObject = null;
             }
-
+    
+            // 5. Leave the socket room
+            socket.emit('leave-class', classId);
+    
+            // 6. Navigate away
             navigate("/student-view-classes", { replace: true });
+    
         } catch (error) {
             console.error("Error during class cleanup:", error);
+            // Still try to navigate away even if there's an error
+            navigate("/student-view-classes", { replace: true });
         }
     };
 

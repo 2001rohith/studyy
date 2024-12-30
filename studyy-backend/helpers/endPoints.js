@@ -1,4 +1,18 @@
 const Endpoints = {
+    AUTH: {
+        SIGNUP: `/signup`,
+        VERIFY_OTP: `/verify-otp`,
+        RESEND_OTP: `/resend-otp`,
+        LOGIN: `/login`,
+        AUTH_GOOGLE: `/auth/google`,
+        GOOGLE_CALLBACK: `/auth/google/callback`,
+        SELECT_ROLE: `/select-role`,
+        FORGOT_PASSWORD: `/forgot-password`,
+        RESET_PASSWORD: `/reset-password/:token`,
+        CHANGE_PASSWORD: `/change-password/:id`,
+        EDIT_PROFILE: `/edit-profile/:id`,
+        GET_PROFILE_DATA: `/get-profile-data/:id`,
+    },
     TEACHER: {
         CREATE_COURSE: `/create`,
         GET_COURSES: `/get-courses`,
@@ -22,12 +36,20 @@ const Endpoints = {
         ADD_CLASS: `/add-class`,
         EDIT_CLASS: `/teacher-edit-class/:id`,
         DELETE_CLASS: `/teacher-delete-class/:id`,
+        GET_ASSIGNMENT_SUBMISSION: `/get-assignment-submissions/:id`,
+        GET_QUIZ_SUBMISSION: `/get-quiz-submissions/:id`,
+        GET_COURSE_STUDENTS: `/get-course-students/:id`,
         SEND_NOTIFICATION: `/send-notification`,
         ADD_PEER_ID: `/add-peerid/:id`,
         SEND_EMAIL_NOTIFICATION: `/send-email-notification`,
         UPDATE_CLASS_STATUS: `/update-class-status/:id`,
     },
     ADMIN: {
+        GET_USERS: `/get-users`,
+        GET_TEACHERS: `/get-teachers`,
+        DELETE_USER: `/admin-delete-user/:id`,
+        BLOCK_USER: `/admin-block-user/:id`,
+        VERIFY_TEACHER: `/admin-verify-teacher/:id`,
         GET_COURSES: `/admin-get-courses`,
         GET_COURSE: `/admin-get-course/:id`,
         GET_QUIZZES: `/admin-get-quizzes`,
@@ -45,10 +67,9 @@ const Endpoints = {
         GET_CLASSES: `/student-get-classes/:id`,
         GET_NOTIFICATIONS: `/get-notifications/:id`,
         MARK_NOTIFICATIONS_AS_READ: `/mark-notifications-as-read`,
-    },
-    HOME: {
         GET_COURSES: `/home-get-courses/:id`,
     },
+
 };
 
 module.exports = Endpoints;

@@ -127,9 +127,10 @@ const TeacherEditClass = () => {
                                         
                                     />
                                 </div>
+                                <label>Status:</label>
                                 <div className="dropdown">
                                     <button
-                                        className="btn btn-secondary dropdown-toggle"
+                                        className="btn btn-secondary dropdown-toggle mt-1"
                                         type="button"
                                         id="dropdownMenuButton"
                                         data-bs-toggle="dropdown"
@@ -137,6 +138,7 @@ const TeacherEditClass = () => {
                                     >
                                         {status || 'Select Status'}
                                     </button>
+                                    
                                     <ul className="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                         <li>
                                             <button
