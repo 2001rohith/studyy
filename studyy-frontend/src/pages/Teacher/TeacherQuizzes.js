@@ -47,7 +47,7 @@ function TeacherQuizzes() {
         };
 
         fetchQuizzes();
-    }, [courseId, user, navigate, apiClient]);
+    }, [courseId, user, navigate]);
 
     const addQuiz = () => navigate("/teacher-add-quiz", { state: { id: courseId } });
 

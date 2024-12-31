@@ -5,7 +5,7 @@ import io from 'socket.io-client'
 import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
-
+import Table from '../components/Table'
 
 const socket = io(`${API_URL}`);
 
@@ -30,6 +30,7 @@ function TeacherCourses() {
   const [emailModal, setEmailModal] = useState(false)
   console.log("user from local storage:", user)
 
+  
   
   const getCourses = async () => {
     try {
@@ -205,6 +206,44 @@ function TeacherCourses() {
     }
   };
 
+  const columns = [
+    {
+      header: '#',
+      render: (_, index) => index // The index is now passed correctly from the Table component
+    },
+    {
+      header: 'CourseId',
+      accessor: 'courseId',
+      minWidth: '120px' // Optional: set minimum width for columns
+    },
+    {
+      header: 'Title',
+      accessor: 'title',
+      minWidth: '200px'
+    },
+    {
+      header: 'Students',
+      accessor: 'studentCount',
+      minWidth: '100px'
+    },
+    {
+      header: 'Assignments',
+      accessor: 'assignmentCount',
+      minWidth: '100px'
+    }
+  ];
+
+  const renderRowActions = (course) => (
+    <>
+      <button className='btn table-button mx-1' onClick={() => handleView(course.id)}>View</button>
+      <button className='btn table-button mx-1' onClick={() => handleEdit(course)}>Edit</button>
+      <button className='btn table-button mx-1' onClick={() => handleViewStudents(course.id)}>Students</button>
+      <button className='btn table-button mx-1' onClick={() => confirmDelete(course.id)}>Delete</button>
+      <button className='btn table-button mx-1' onClick={() => setNotificationModal(course.id)}>Send notification</button>
+      <button className='btn table-button mx-1' onClick={() => handleEmailModal(course.id)}>Send email</button>
+    </>
+  );
+
   return (
     <>
       <div className='row'>
@@ -228,37 +267,18 @@ function TeacherCourses() {
             ) : courses.length === 0 ? (
               <p className='mt-3 ms-3'>No courses available. Add a course to get started.</p>
             ) : (
-              <table className="table table-default table-hover table-responsive table-striped-columns table-borderless mt-2 ms-4">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>CourseId</th>
-                    <th>Title</th>
-                    <th>Students</th>
-                    <th>Assignments</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody >
-                  {currentCourses.map((course, index) => (
-                    <tr key={course.id}>
-                      <td>{index + 1}</td>
-                      <td>{course.courseId}</td>
-                      <td>{course.title}</td>
-                      <td>{course.studentCount}</td>
-                      <td>{course.assignmentCount}</td>
-                      <td>
-                        <button className='btn  table-button mx-1' onClick={() => handleView(course.id)}>View</button>
-                        <button className='btn  table-button mx-1' onClick={() => handleEdit(course)}>Edit</button>
-                        <button className='btn  table-button mx-1' onClick={() => handleViewStudents(course.id)}>Students</button>
-                        <button className='btn  table-button mx-1' onClick={() => confirmDelete(course.id)}>Delete</button>
-                        <button className='btn  table-button mx-1' onClick={() => setNotificationModal(course.id)}>Send notification</button>
-                        <button className='btn  table-button mx-1' onClick={() => handleEmailModal(course.id)}>Send email</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table 
+              columns={columns}
+              data={currentCourses}
+              loading={loading}
+              error={error}
+              emptyMessage="No courses available. Add a course to get started."
+              rowActions={renderRowActions}
+              currentPage={currentPage}
+              itemsPerPage={coursePerPage}
+              onPageChange={paginate}
+              totalItems={courses.length}
+            />
             )}
             <nav>
               <ul className="pagination">
