@@ -41,7 +41,7 @@ function StudentAllQuizzes() {
             }
         };
         getQuizzes();
-    }, [user, navigate, apiClient]);
+    }, [user, navigate]);
 
     const handleAttend = (quiz) => {
         navigate("/attend-quiz", { state: { quiz } });

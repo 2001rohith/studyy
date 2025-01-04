@@ -6,6 +6,7 @@ import { useApiClient } from "../../utils/apiClient"
 function ResetPassword() {
     const apiClient = useApiClient()
     const { token } = useParams();
+    console.log("token from reset password:",token)
     const [message, setMessage] = useState("");
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');

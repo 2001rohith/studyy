@@ -28,7 +28,7 @@ const SelectRole = () => {
         formData.append('role', selectedRole);
         if (certificate) formData.append('certificate', certificate);
 
-        const response = await apiClient.post('/user/select-role', formData)
+        const response = await apiClient.post(`/user/select-role/${token}`, formData)
 
         if (response.status === 200) {
           const data = response.data

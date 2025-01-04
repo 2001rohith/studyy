@@ -26,7 +26,7 @@ function StudentSidebar() {
             fetchNotifications()
             setHasUnread(true);
         });
-        // fetchNotifications()
+        fetchNotifications()
 
         return () => {
             socket.off('newNotification');

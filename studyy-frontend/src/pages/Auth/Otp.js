@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApiClient } from "../../utils/apiClient"
+import { useUser } from '../../UserContext';
 
 function Otp() {
     const apiClient = useApiClient()
@@ -12,6 +13,7 @@ function Otp() {
     const navigate = useNavigate();
     const phone = location.state?.trimmedPhone;
     const email = location.state?.trimmedEmail;
+    const{login} = useUser()
 
 
     const handleSubmit = async (e) => {
@@ -32,6 +34,7 @@ function Otp() {
             setMessage(data.message)
             if (response.status === 200) {
                 const token = data.token;
+                // login({ email }, token);
                 navigate("/select-role", { state: { email, token } });
             }
         } catch (error) {

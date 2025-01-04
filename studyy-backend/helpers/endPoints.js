@@ -6,7 +6,7 @@ const Endpoints = {
         LOGIN: `/login`,
         AUTH_GOOGLE: `/auth/google`,
         GOOGLE_CALLBACK: `/auth/google/callback`,
-        SELECT_ROLE: `/select-role`,
+        SELECT_ROLE: `/select-role/:token`,
         FORGOT_PASSWORD: `/forgot-password`,
         RESET_PASSWORD: `/reset-password/:token`,
         CHANGE_PASSWORD: `/change-password/:id`,

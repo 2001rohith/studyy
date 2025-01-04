@@ -3,6 +3,7 @@ const Course = require("../models/courseModel")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const { sendOTP } = require("../helpers/sendSMS")
+const sendEmail = require("../helpers/sendEmail")
 const { v4: uuidv4 } = require("uuid")
 const { UserRefreshClient } = require("google-auth-library")
 const crypto = require("crypto")
@@ -244,10 +245,12 @@ exports.forgotPassword = async (req, res) => {
         }
 
         const resetToken = user.createPasswordResetToken();
+        console.log("reset token:",resetToken)
         await user.save({ validateBeforeSave: false });
 
 
-        const resetURL = `${process.env.FRONTEND_URL}/${resetToken}`;
+        const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+        console.log("reset url:",resetURL)
         const message = `Forgot your password? Reset it here: ${resetURL}`;
 
         await sendEmail(email, "here is the link for reset password", message)

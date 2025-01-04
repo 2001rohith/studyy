@@ -56,6 +56,7 @@ const createApiClient = (token) => {
 
 export const useApiClient = () => {
     const { token } = useUser();
+    console.log("Token from api client:", token);
     return createApiClient(token);
 };
 
