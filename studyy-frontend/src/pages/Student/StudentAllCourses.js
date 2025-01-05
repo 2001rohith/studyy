@@ -59,9 +59,10 @@ function StudentAllCourses() {
       }
   
       if (search) {
+        const searchTerm = search.toLowerCase();
         tempFilteredCourses = tempFilteredCourses.filter(course =>
-          course?.title?.toLowerCase().includes(search.toLowerCase()) ||
-          course?.description?.toLowerCase().includes(search.toLowerCase())
+          course?.title?.toLowerCase().includes(searchTerm) ||
+          course?.courseId?.toLowerCase().includes(searchTerm)
         );
       }
   
