@@ -94,8 +94,8 @@ function StudentViewCourse() {
                             <>
                                 <h2>{course.title}</h2>
                                 <p>{course.description}</p>
-                                <p>{course.courseId}</p>
-                                <p>course by : {teacher.name}</p>
+                                <p>Id: {course.courseId}</p>
+                                <p>course by: {teacher.name}</p>
                             </>
                         ) : (
                             <p>No course found</p>
