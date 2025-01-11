@@ -69,7 +69,7 @@ function StudentEnrolledCourses() {
           </div>
           <div className="row table-content">
             <div className="row mt-3 text-dark">
-              <h5 className="mb-3">Enrolled Courses</h5>
+              <h5 className="mb-5">Enrolled Courses</h5>
               <div className="scroll-container">
                 {currentCourses.length > 0 ? (
                   currentCourses.map((course) => (
