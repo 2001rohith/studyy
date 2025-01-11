@@ -5,6 +5,8 @@ import io from 'socket.io-client'
 import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const socket = io(`${API_URL}`);
 
@@ -13,7 +15,7 @@ const TeacherEditQuiz = () => {
 
     const location = useLocation();
     const navigate = useNavigate();
-    const { user,token } = useUser();
+    const { user, token } = useUser();
     const [teacherId, setTeacherId] = useState(user.id)
     const quizId = location.state?.quiz._id;
     const courseId = location.state?.courseId;
@@ -51,14 +53,54 @@ const TeacherEditQuiz = () => {
 
     const handleQuestionChange = (index, field, value) => {
         const updatedQuestions = [...questions];
+
         if (field === 'option1' || field === 'option2') {
             const optionIndex = field === 'option1' ? 0 : 1;
+            const currentOptions = updatedQuestions[index].options;
+            const otherOptionIndex = optionIndex === 0 ? 1 : 0;
+
+            // Check for duplicate options within the same question
+            if (
+                value.trim().toLowerCase() === currentOptions[otherOptionIndex].trim().toLowerCase() &&
+                value.trim() !== ''
+            ) {
+                toast.error("Options for a question cannot be the same!", {
+                    position: "bottom-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                });
+            }
+
             updatedQuestions[index].options[optionIndex] = value;
         } else {
+            // Check for duplicate questions
+            if (field === 'question' && value.trim() !== '') {
+                const isDuplicate = questions.some(
+                    (q, i) => i !== index && q.question.trim().toLowerCase() === value.trim().toLowerCase()
+                );
+
+                if (isDuplicate) {
+                    toast.error(`Question "${value}" already exists!`, {
+                        position: "bottom-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                    });
+                }
+            }
+
             updatedQuestions[index][field] = value;
         }
+
         setQuestions(updatedQuestions);
     };
+
+
 
     const handleAddQuestion = () => {
         setQuestions([...questions, { question: '', options: ['', ''], answer: '' }]);
@@ -74,35 +116,56 @@ const TeacherEditQuiz = () => {
 
         const trimmedTitle = quizTitle.trim();
         if (!trimmedTitle) {
-            setMessage("Please provide a valid quiz title.");
+            toast.error("Please provide a valid quiz title.");
+            return;
+        }
+
+        // Check for duplicate questions
+        const questionTexts = questions.map(q => q.question.trim().toLowerCase());
+        const hasDuplicateQuestions = questionTexts.some(
+            (question, index) => questionTexts.indexOf(question) !== index
+        );
+
+        if (hasDuplicateQuestions) {
+            toast.error("Please remove duplicate questions before submitting.");
+            return;
+        }
+
+        // Check for duplicate options
+        const hasDuplicateOptions = questions.some(q => {
+            const [option1, option2] = q.options.map(opt => opt.trim().toLowerCase());
+            return option1 === option2 && option1 !== '';
+        });
+
+        if (hasDuplicateOptions) {
+            toast.error("Please ensure no options are the same within a question.");
             return;
         }
 
         const quizData = { title: trimmedTitle, questions, courseId, teacherId };
 
         try {
-
             const response = await apiClient.put(`/course/teacher-edit-quiz/${quizId}`, quizData);
-
             const data = response.data;
+
             if (response.status === 200) {
-                setMessage("Quiz updated successfully!");
-                setShowToast(true)
+                toast.success("Quiz updated successfully!");
                 setTimeout(() => {
-                    navigate("/teacher-view-quizzes", { state: { id: courseId }, replace: true })
+                    navigate("/teacher-view-quizzes", { state: { id: courseId }, replace: true });
                 }, 1000);
                 socket.emit('notificationAdded', {
                     courseId: courseId,
                     teacherId: user.id,
                 });
             } else {
-                setMessage(data.message || "Error occurred while updating the quiz.");
+                toast.error(data.message || "Error occurred while updating the quiz.");
             }
         } catch (error) {
             console.error('Error updating quiz:', error);
-            setMessage("Server error. Please try again.");
+            toast.error("Server error. Please try again.");
         }
     };
+
 
     // const goback = async () => {
     //     navigate("/teacher-view-quizzes", { state: { id: courseId } });
@@ -110,6 +173,7 @@ const TeacherEditQuiz = () => {
 
     return (
         <>
+            <ToastContainer />
             <div className="row">
                 <div className="col text-light side-bar">
                     <TeacherSidebar />

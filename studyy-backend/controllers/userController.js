@@ -348,3 +348,21 @@ exports.editProfile = async (req, res) => {
     }
 }
 
+exports.getProfile = async (req, res) => {
+    const userId = req.user._id
+    try {
+        const user = await User.findById(userId)
+        if (!user) return res.status(HttpStatus.BAD_REQUEST).json({ message: "user not found" })
+
+            const userToSend = {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
+        console.log("user from get user info:",userToSend)
+        res.json({ user: userToSend });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching user profile' });
+    }
+}

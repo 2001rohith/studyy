@@ -3,100 +3,106 @@ import { useNavigate } from 'react-router-dom';
 import StudentSidebar from '../components/StudentSidebar';
 import { useApiClient } from "../../utils/apiClient";
 import { useUser } from "../../UserContext";
+import debounce from 'lodash/debounce';
 
 function StudentAllCourses() {
   const apiClient = useApiClient();
   const navigate = useNavigate();
-  const { user, token } = useUser();
+  const { user } = useUser();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [newCourses, setNewCourses] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [search, setSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(1)
-  const [modulesFilter, setModulesFilter] = useState(null)
-  const [filteredCourses, setFilteredCourses] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [modulesFilter, setModulesFilter] = useState("");
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCourses, setTotalCourses] = useState(0);
   const itemsPerPage = 4;
 
+  // Debounced search function
+  const debouncedSearch = debounce((searchTerm) => {
+    setSearch(searchTerm);
+    setCurrentPage(1);
+  }, 500);
+
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        if (!user || !user.id) {
-          setError('User information not found');
-          navigate("/", { replace: true });
-          return;
-        }
-
-        const response = await apiClient.get(`/course/home-get-courses/${user.id}`);
-
-        if (response.status === 200) {
-          const data = response.data;
-          setNewCourses(data.courses || []);
-        }
-      } catch (error) {
-        console.error("Error in fetching courses:", error);
-        setError(error.response?.data?.message || 'Failed to fetch courses');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchCourses();
-  }, []);
+  }, [currentPage, search, modulesFilter]);
 
-  const viewCourse = (id) => {
-    navigate("/student-check-course", { state: { courseId: id } });
+  const fetchCourses = async () => {
+    try {
+      setLoading(true); // Show loading indicator only in relevant parts
+      const queryParams = new URLSearchParams({
+        page: currentPage,
+        limit: itemsPerPage,
+        search: search,
+        modulesFilter: modulesFilter
+      });
+
+      const response = await apiClient.get(
+        `/course/home-get-courses/${user.id}?${queryParams}`
+      );
+
+      if (response.status === 200) {
+        const { courses, totalPages, totalCourses } = response.data;
+        setCourses(courses || []);
+        setTotalPages(totalPages);
+        setTotalCourses(totalCourses);
+      }
+    } catch (error) {
+      console.error("Error in fetching courses:", error);
+      setError(error.response?.data?.message || 'Failed to fetch courses');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => {
-    const applyFilters = () => {
-      let tempFilteredCourses = [...newCourses]
-  
-      if (modulesFilter === 'Less') {
-        tempFilteredCourses = tempFilteredCourses.filter(course => course.modules.length >= 1 && course.modules.length <= 2);
-      } else if (modulesFilter === 'Medium') {
-        tempFilteredCourses = tempFilteredCourses.filter(course => course.modules.length >= 3 && course.modules.length <= 4);
-      } else if (modulesFilter === 'More') {
-        tempFilteredCourses = tempFilteredCourses.filter(course => course.modules.length > 4);
-      }
-  
-      if (search) {
-        const searchTerm = search.toLowerCase();
-        tempFilteredCourses = tempFilteredCourses.filter(course =>
-          course?.title?.toLowerCase().includes(searchTerm) ||
-          course?.courseId?.toLowerCase().includes(searchTerm)
-        );
-      }
-  
-      setFilteredCourses(tempFilteredCourses);
-    };
-  
-    applyFilters()
-  }, [newCourses, search, modulesFilter])
 
-  const totalPages = Math.ceil(filteredCourses.length / itemsPerPage);
-  const currentItems = filteredCourses.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
+  const handleSearchChange = (e) => {
+    debouncedSearch(e.target.value);
   };
 
-  if (loading) {
-    return (
-      <div className="spinner-border text-primary spinner2" role="status">
-        <span className="visually-hidden">Loading...</span>
-      </div>
-    );
-  }
+  const clearSearch = () => {
+    setSearch('');
+    setCurrentPage(1);
+  };
 
-  if (error) {
+  const handleModulesFilter = (value) => {
+    setModulesFilter(value);
+    setCurrentPage(1);
+  };
+
+  const renderPagination = () => {
+    // if (totalPages <= 1) return null;
+
     return (
-      <div className="alert alert-danger" role="alert">
-        {error}
+      <div className="pagination-controls text-center mt-4">
+        <button
+          className="btn btn-outline-primary mx-1"
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </button>
+        <span className="mx-2">Page {currentPage} of {totalPages}</span>
+        <button
+          className="btn btn-outline-primary mx-1"
+          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </button>
       </div>
     );
-  }
+  };
+
+  // if (loading) {
+  //   return (
+  //     <div className="spinner-border text-primary spinner2" role="status">
+  //       <span className="visually-hidden">Loading...</span>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="row">
@@ -112,12 +118,12 @@ function StudentAllCourses() {
             <input
               type="text"
               placeholder="Search course..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              defaultValue={search}
+              onChange={handleSearchChange}
             />
             <button
               className="btn search-bar-button"
-              onClick={() => setSearch('')}
+              onClick={clearSearch}
               disabled={!search}
             >
               Clear
@@ -130,99 +136,89 @@ function StudentAllCourses() {
                 data-bs-toggle="dropdown"
                 aria-expanded="false"
               >
-                {modulesFilter ? modulesFilter : "Modules"}
+                {modulesFilter || "Modules"}
               </button>
               <ul className="dropdown-menu" aria-labelledby="dropdownMenuButton">
                 <li>
-                  <a
-                    className="dropdown-item"
-                    href="#"
-                    onClick={() => setModulesFilter('')}
-                  >
+                  <button className="dropdown-item" onClick={() => handleModulesFilter('')}>
                     Default
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a
-                    className="dropdown-item"
-                    href="#"
-                    onClick={() => setModulesFilter('Less')}
-                  >
+                  <button className="dropdown-item" onClick={() => handleModulesFilter('Less')}>
                     1-2
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a
-                    className="dropdown-item"
-                    href="#"
-                    onClick={() => setModulesFilter('Medium')}
-                  >
+                  <button className="dropdown-item" onClick={() => handleModulesFilter('Medium')}>
                     3-4
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a
-                    className="dropdown-item"
-                    href="#"
-                    onClick={() => setModulesFilter('More')}
-                  >
+                  <button className="dropdown-item" onClick={() => handleModulesFilter('More')}>
                     4+
-                  </a>
+                  </button>
                 </li>
               </ul>
             </div>
           </div>
+
+          {error && (
+            <div className="alert alert-danger mt-3" role="alert">
+              {error}
+            </div>
+          )}
+
           <div className="row mt-3 text-dark">
-            <h5 className="mb-3">Our courses!</h5>
+            <h5 className="mb-3">Our Courses</h5>
             <div className="scroll-container">
-              {filteredCourses.length === 0 ? (
+              {courses.length === 0 ? (
                 <div className="alert alert-info" role="alert">
-                  No courses match your search criteria.
+                  No courses match.
+                </div>
+              ) : loading ? (
+                <div className="text-center my-3">
+                  <div className="spinner-border text-primary spinner3" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
                 </div>
               ) : (
-                currentItems.map((course) => (
-                  <div
-                    className="card course-card mx-2"
-                    style={{ width: '20rem', height: "25rem" }}
-                    key={course._id}
-                  >
-                    <img
-                      src="/course-card1.jpg"
-                      className="card-img-top"
-                      alt="Course thumbnail"
-                      style={{ height: '200px', objectFit: 'cover', borderRadius: "15px" }}
-                    />
-                    <div className="card-body">
-                      <h5 className="card-title">{course.title}</h5>
-                      <small className="card-text mb-1">{course.description}</small>
-                      <div className="text-center">
-                        <button
-                          className="btn button mt-5"
-                          onClick={() => viewCourse(course._id)}
-                        >
-                          More
-                        </button>
+                <div className="row row-cols-1 row-cols-md-2 g-4">
+                  {courses.map((course) => (
+                    <div className="col" key={course._id}>
+                      <div className="card course-card  mb-5">
+                        <img
+                          src="/course-card1.jpg"
+                          className="card-img-top"
+                          alt="Course thumbnail"
+                          style={{ objectFit: 'cover', borderRadius: '15px' }}
+                        />
+                        <div className="card-body d-flex flex-column">
+                          <h5 className="card-title">{course.title}</h5>
+                          <p className="card-text mb-1">{course.description}</p>
+                          <div className="text-center mt-auto">
+                            <button
+                              className="btn button"
+                              onClick={() =>
+                                navigate("/student-check-course", {
+                                  state: { courseId: course._id },
+                                })
+                              }
+                            >
+                              More
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
-          </div>
-          
-            <div className="pagination-controls text-center mt-3">
-              {[...Array(totalPages).keys()].map((num) => (
-                <button
-                  key={num + 1}
-                  className={`btn ${currentPage === num + 1 ? 'btn-primary' : 'btn-outline-primary'} mx-1`}
-                  onClick={() => handlePageChange(num + 1)}
-                >
-                  {num + 1}
-                </button>
-              ))}
-            </div>
+          </div>;
         </div>
       </div>
+      {renderPagination()}
     </div>
   );
 }

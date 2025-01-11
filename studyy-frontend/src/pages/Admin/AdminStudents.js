@@ -1,180 +1,206 @@
-// import React, { useState, useEffect, useRef } from 'react';
+// import React, { useState, useEffect } from 'react';
 // import { useNavigate } from 'react-router-dom';
 // import StudentSidebar from '../components/StudentSidebar';
-// import { useUser } from "../../UserContext"
-// import { useApiClient } from "../../utils/apiClient"
+// import { useApiClient } from "../../utils/apiClient";
+// import { useUser } from "../../UserContext";
 
-// function StudentAllAssignments() {
-//     const apiClient = useApiClient()
-//     const navigate = useNavigate();
-//     const { user,token } = useUser();
-//     const [loading, setLoading] = useState(true)
-//     const [assignments, setAssignments] = useState([]);
-//     const fileInputRefs = useRef({});
-//     const [showToast, setShowToast] = useState(false)
-//     const [message, setMessage] = useState("")
+// function StudentAllCourses() {
+//   const apiClient = useApiClient();
+//   const navigate = useNavigate();
+//   const { user, token } = useUser();
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+//   const [courses, setCourses] = useState([]);
+//   const [search, setSearch] = useState("");
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const [modulesFilter, setModulesFilter] = useState("");
+//   const [totalPages, setTotalPages] = useState(1)
+//   const itemsPerPage = 4;
 
-//     if (!user || !token) {
-//         navigate('/');
-//         return;
-//     }
+//   useEffect(() => {
+//     const fetchCourses = async () => {
+//       try {
+//         if (!user || !user.id) {
+//           setError('User information not found');
+//           navigate("/", { replace: true });
+//           return;
+//         }
 
-//     useEffect(() => {
-//         const getAssignments = async () => {
-//             try {
-//                 const response = await apiClient.get(`/course/student-get-assignments/${user.id}`);
-//                 const data = response.data;
-//                 if (response.status === 200) {
-//                     setAssignments(data.assignments);
-//                     setLoading(false)
-//                     console.log("assignments:", data.assignments);
-//                 } else {
-//                     console.log("something went wrong:", data.message);
-//                 }
-//             } catch (error) {
-//                 console.log("error in fetching assignments:", error);
-//             }
+//         const params = {
+//           page: currentPage,
+//           limit: itemsPerPage,
+//           search: search,
+//           modulesFilter: modulesFilter
 //         };
-//         getAssignments();
-//     }, []);
 
-//     const handleFileUploadClick = (assignmentId) => {
-//         if (fileInputRefs.current[assignmentId]) {
-//             fileInputRefs.current[assignmentId].click();
+//         const response = await apiClient.get(`/course/home-get-courses/${user.id}`, { params });
+
+//         if (response.status === 200) {
+//           const data = response.data;
+//           setCourses(data.courses || []);
+//           setTotalPages(data.totalPages);
 //         }
+//       } catch (error) {
+//         console.error("Error in fetching courses:", error);
+//         setError(error.response?.data?.message || 'Failed to fetch courses');
+//       } finally {
+//         setLoading(false);
+//       }
 //     };
+//     fetchCourses();
+//   }, [currentPage, search, modulesFilter, user]);
 
-//     const handleFileChange = async (e, assignmentId) => {
-//         const file = e.target.files[0];
-//         if (!file) {
-//             alert('No file selected');
-//             return;
-//         }
+//   const viewCourse = (id) => {
+//     navigate("/student-check-course", { state: { courseId: id } });
+//   };
 
-//         const formData = new FormData();
-//         formData.append('file', file);
-//         formData.append('studentId', user.id);
+//   const handlePageChange = (page) => {
+//     setCurrentPage(page);
+//   };
 
-//         try {
-//             const token = localStorage.getItem('token');
-//             if (!token) {
-//                 throw new Error('Authentication token is missing');
-//             }
-
-//             const response = await apiClient.post(`/course/submit-assignment/${assignmentId}`, formData, {
-//                 headers: {
-//                     'Authorization': `Bearer ${token}`,
-//                 },
-//             });
-
-//             const data = response.data
-
-//             if (response.status === 200) {
-//                 setMessage("Assignment Uploaded")
-//                 setShowToast(true)
-//                 setAssignments(prevAssignments =>
-//                     prevAssignments.map(a =>
-//                         a._id === assignmentId
-//                             ? {
-//                                 ...a,
-//                                 submissions: Array.isArray(a.submissions)
-//                                     ? [...a.submissions, { student: user.id, filePath: 'path-to-file' }]
-//                                     : [{ student: user.id, filePath: 'path-to-file' }],
-//                             }
-//                             : a
-//                     )
-//                 );
-//             } else {
-//                 console.log("Error:", data.message);
-//                 setMessage(data.message)
-//                 setShowToast(true)
-//             }
-//         } catch (error) {
-//             if (error.response) {
-//                 console.error('Server Error:', error.response.data);
-
-//             } else {
-//                 console.error('Error submitting assignment:', error.message);
-
-//             }
-//         }
-//     };
-
-
-//     if (loading) {
-//         return <div className="spinner-border text-primary spinner2" role="status">
-//             <span className="visually-hidden">Loading...</span>
-//         </div>
-//     }
+//   if (loading) {
 //     return (
-//         <>
-//             <div className='row'>
-//                 <div className='col text-light side-bar'>
-//                     <StudentSidebar />
-//                 </div>
-//                 <div className='col text-dark'>
-//                     <div className='row headers'>
-//                         <h4>Assignments</h4>
-//                     </div>
-//                     <div className='row table-content'>
-//                         <div className="row mt-3 text-dark">
-//                             <h5 className='mb-3 ms-2'>All Assignments</h5>
-//                             <div className="scroll-container">
-//                                 {assignments.length === 0 ? (
-//                                     <p>There is no assignments</p>
-//                                 ) : (
-//                                     assignments.map((assignment) => (
-//                                         <div className="card course-card mx-2" style={{ width: '20rem', height: "30rem" }} key={assignment._id}>
-//                                             <img src="/banner9.jpg" className="card-img-top" alt="..." style={{ height: '200px', objectFit: 'cover', borderRadius: "15px" }} />
-//                                             <div className="card-body text-center">
-//                                                 <h5 className="card-title">{assignment.title}</h5>
-//                                                 <h6>{assignment.course}</h6>
-//                                                 <small className="card-text">{assignment.description}</small>
-//                                             </div>
-//                                             <div className='text-center'>
-//                                                 {
-//                                                     assignment.submissions && Array.isArray(assignment.submissions) &&
-//                                                         !assignment.submissions.some(submission => submission.student.toString() === user.id.toString()) ? (
-//                                                         <>
-//                                                             <button
-//                                                                 className="btn button mb-4"
-//                                                                 style={{ width: "100px" }}
-//                                                                 onClick={() => handleFileUploadClick(assignment._id)}
-//                                                             >
-//                                                                 Upload
-//                                                             </button>
-//                                                             <input
-//                                                                 type="file"
-//                                                                 accept=".pdf,.mp4"
-//                                                                 style={{ display: "none" }}
-//                                                                 ref={(el) => (fileInputRefs.current[assignment._id] = el)}
-//                                                                 onChange={(e) => handleFileChange(e, assignment._id)}
-//                                                             />
-//                                                         </>
-//                                                     ) : (
-//                                                         <h6 className='mb-5' style={{ color: "#28A804" }}>Submitted!</h6>
-//                                                     )
-//                                                 }
-//                                             </div>
-//                                         </div>
-//                                     ))
-//                                 )}
-//                             </div>
-//                         </div>
-//                     </div>
-//                 </div>
-//             </div>
-//             {showToast && (
-//                 <div className="toast show position-fixed  bottom-0 end-0 m-3" style={{ borderRadius: "15px", backgroundColor: "#0056b3", color: "white" }}>
-//                     <div className="toast-body">
-//                         {message}
-//                         <button type="button" className="btn-close ms-2 mb-1" onClick={() => setShowToast(false)}></button>
-//                     </div>
-//                 </div>
-//             )}
-//         </>
+//       <div className="spinner-border text-primary spinner2" role="status">
+//         <span className="visually-hidden">Loading...</span>
+//       </div>
 //     );
+//   }
+
+//   if (error) {
+//     return (
+//       <div className="alert alert-danger" role="alert">
+//         {error}
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="row">
+//       <div className="col text-light side-bar">
+//         <StudentSidebar />
+//       </div>
+//       <div className="col text-dark">
+//         <div className="row headers">
+//           <h4>Courses</h4>
+//         </div>
+//         <div className="row table-content">
+//           <div className="search-bar ms-1 border-bottom pb-3">
+//             <input
+//               type="text"
+//               placeholder="Search course..."
+//               value={search}
+//               onChange={(e) => setSearch(e.target.value)}
+//             />
+//             <button
+//               className="btn search-bar-button"
+//               onClick={() => setSearch('')}
+//               disabled={!search}
+//             >
+//               Clear
+//             </button>
+//             <div className="dropdown ms-2">
+//               <button
+//                 className="btn filter-button dropdown-toggle"
+//                 type="button"
+//                 id="dropdownMenuButton"
+//                 data-bs-toggle="dropdown"
+//                 aria-expanded="false"
+//               >
+//                 {modulesFilter ? modulesFilter : "Modules"}
+//               </button>
+//               <ul className="dropdown-menu" aria-labelledby="dropdownMenuButton">
+//                 <li>
+//                   <a
+//                     className="dropdown-item"
+//                     href="#"
+//                     onClick={() => setModulesFilter('')}
+//                   >
+//                     Default
+//                   </a>
+//                 </li>
+//                 <li>
+//                   <a
+//                     className="dropdown-item"
+//                     href="#"
+//                     onClick={() => setModulesFilter('Less')}
+//                   >
+//                     1-2
+//                   </a>
+//                 </li>
+//                 <li>
+//                   <a
+//                     className="dropdown-item"
+//                     href="#"
+//                     onClick={() => setModulesFilter('Medium')}
+//                   >
+//                     3-4
+//                   </a>
+//                 </li>
+//                 <li>
+//                   <a
+//                     className="dropdown-item"
+//                     href="#"
+//                     onClick={() => setModulesFilter('More')}
+//                   >
+//                     4+
+//                   </a>
+//                 </li>
+//               </ul>
+//             </div>
+//           </div>
+//           <div className="row mt-3 text-dark">
+//             <h5 className="mb-3">Our courses!</h5>
+//             <div className="scroll-container">
+//               {courses.length === 0 ? (
+//                 <div className="alert alert-info" role="alert">
+//                   No courses match your search criteria.
+//                 </div>
+//               ) : (
+//                 courses.map((course) => (
+//                   <div
+//                     className="card course-card mx-2"
+//                     style={{ width: '20rem', height: "25rem" }}
+//                     key={course._id}
+//                   >
+//                     <img
+//                       src="/course-card1.jpg"
+//                       className="card-img-top"
+//                       alt="Course thumbnail"
+//                       style={{ height: '200px', objectFit: 'cover', borderRadius: "15px" }}
+//                     />
+//                     <div className="card-body">
+//                       <h5 className="card-title">{course.title}</h5>
+//                       <small className="card-text mb-1">{course.description}</small>
+//                       <div className="text-center">
+//                         <button
+//                           className="btn button mt-5"
+//                           onClick={() => viewCourse(course._id)}
+//                         >
+//                           More
+//                         </button>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 ))
+//               )}
+//             </div>
+//           </div>
+
+//           <div className="pagination-controls text-center mt-3">
+//             {[...Array(totalPages)].map((_, index) => (
+//               <button
+//                 key={index}
+//                 className={`btn ${currentPage === index + 1 ? 'btn-primary' : 'btn-outline-primary'} mx-1`}
+//                 onClick={() => handlePageChange(index + 1)}
+//               >
+//                 {index + 1}
+//               </button>
+//             ))}
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
 // }
 
-// export default StudentAllAssignments;
-
+// export default StudentAllCourses;

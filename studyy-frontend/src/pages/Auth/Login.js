@@ -65,7 +65,7 @@ function Login() {
     };
 
     const googleLogin = () => {
-        window.location.href = `${API_URL}/user/auth/google`; // Use the directly specified API URL for Google login
+        window.location.href = `${API_URL}/user/auth/google`
     };
 
     return (

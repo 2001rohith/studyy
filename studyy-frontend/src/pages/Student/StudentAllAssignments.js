@@ -15,39 +15,44 @@ function StudentAllAssignments() {
     const [modal, setModal] = useState(false);
     const [message, setMessage] = useState("");
     const [assignmentDetails, setAssignmentDetails] = useState({ title: "", description: "", dueDate: "" });
-
-    // Pagination states
+    const [totalPages, setTotalPages] = useState(1)
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6; // Number of assignments per page
 
-    // Calculate pagination details
-    const totalPages = Math.max(1, Math.ceil(assignments.length / itemsPerPage)); // Always show at least one page
-    const currentAssignments = assignments.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+
 
     useEffect(() => {
         if (!user) {
             navigate('/');
             return;
         }
-        const getAssignments = async () => {
+
+        const fetchAssignments = async () => {
             try {
-                const response = await apiClient.get(`/course/student-get-assignments/${user.id}`);
-                const data = response.data;
+                setLoading(true);
+                const response = await apiClient.get(`/course/student-get-assignments/${user.id}`, {
+                    params: {
+                        page: currentPage,
+                        limit: itemsPerPage,
+                    },
+                });
+
                 if (response.status === 200) {
-                    setAssignments(data.assignments);
-                    setLoading(false);
+                    const { assignments, totalPages } = response.data;
+                    setAssignments(assignments);
+                    setTotalPages(totalPages);
                 } else {
-                    console.log("Something went wrong:", data.message);
+                    console.log("Something went wrong:", response.data.message);
                 }
             } catch (error) {
-                console.log("Error in fetching assignments:", error);
+                console.error("Error fetching assignments:", error.message);
+            } finally {
+                setLoading(false);
             }
         };
-        getAssignments();
-    }, []);
+
+        fetchAssignments();
+    }, [currentPage]);
 
     const handleFileUploadClick = (assignmentId) => {
         if (fileInputRefs.current[assignmentId]) {
@@ -111,8 +116,11 @@ function StudentAllAssignments() {
     };
 
     const handlePageChange = (page) => {
-        setCurrentPage(page);
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
     };
+
 
     if (loading) {
         return (
@@ -136,10 +144,10 @@ function StudentAllAssignments() {
                         <div className="row mt-3 text-dark">
                             <h5 className='mb-3 ms-2'>All Assignments</h5>
                             <div className="scroll-container">
-                                {currentAssignments.length === 0 ? (
+                                {assignments.length === 0 ? (
                                     <p>There are no assignments</p>
                                 ) : (
-                                    currentAssignments.map((assignment) => (
+                                    assignments.map((assignment) => (
                                         <div className="card course-card mx-2" style={{ width: '20rem', height: "30rem" }} key={assignment._id}>
                                             <img src="/banner9.jpg" className="card-img-top" alt="..." style={{ height: '200px', objectFit: 'cover', borderRadius: "15px" }} />
                                             <div className="card-body text-center">
@@ -167,18 +175,18 @@ function StudentAllAssignments() {
                             </div>
                         </div>
                     </div>
-                    {/* Pagination controls */}
                     <div className="pagination-controls text-center mt-4">
-                        {[...Array(totalPages).keys()].map((_, index) => (
+                        {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
                             <button
-                                key={index}
-                                className={`btn mx-1 ${currentPage === index + 1 ? 'btn-primary' : 'btn-secondary'}`}
-                                onClick={() => handlePageChange(index + 1)}
+                                key={page}
+                                className={`btn mx-1 ${currentPage === page ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => handlePageChange(page)}
                             >
-                                {index + 1}
+                                {page}
                             </button>
                         ))}
                     </div>
+
                 </div>
             </div>
             {modal && (

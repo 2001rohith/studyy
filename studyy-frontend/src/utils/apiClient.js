@@ -2,7 +2,6 @@ import axios from 'axios';
 import API_URL from '../axiourl';
 import { useUser } from "../UserContext";
 
-// axios instance
 const createApiClient = (token) => {
     const client = axios.create({
         baseURL: API_URL,
@@ -11,7 +10,6 @@ const createApiClient = (token) => {
         },
     });
     
-    // Request interceptor
     client.interceptors.request.use(
         (config) => {
             if (token) {

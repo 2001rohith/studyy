@@ -8,7 +8,7 @@ import { useUser } from "../../UserContext"
 
 function StudentProfile() {
     const apiClient = useApiClient()
-    const { user, updateUser,token } = useUser();
+    const { user, updateUser, token } = useUser();
     const navigate = useNavigate()
     // const User = JSON.parse(localStorage.getItem('user'));
     const [userId, setUserId] = useState(user.id)
@@ -24,13 +24,16 @@ function StudentProfile() {
     const [showEditModal, setShowEditModal] = useState(false)
     const [newCourses, setNewCourses] = useState([])
     const [error, setError] = useState(null)
-    const [userData,setUserdata] = useState()
+    const [userData, setUserdata] = useState()
 
     const getProfileData = async () => {
         try {
             const response = await apiClient.get(`/user/get-profile-data/${userId}`)
             const data = response.data;
+            // console.log("data from student profile:",data)
             if (response.status === 200) {
+                console.log('Phone value:', data.user.phone);
+                console.log('Phone type:', typeof data.user.phone);
                 setUserdata(data.user)
                 setLoading(false)
             }
@@ -103,7 +106,7 @@ function StudentProfile() {
                     closeEditModal()
                 }, 1000)
             } else {
-                setMessage(data.message );
+                setMessage(data.message);
             }
         } catch (error) {
             setMessage('Server error. Please try again later.');
@@ -176,14 +179,17 @@ function StudentProfile() {
                                 <>
                                     <h2>{user.name}</h2>
                                     <p>{user.email}</p>
+                                    <div className='d-flex'>
+                                        <button className='btn table-button mx-1' onClick={setEditModal} style={{ borderRadius: "10px" }}>Edit</button>
+                                        {userData.phone && (
+                                            <button className='btn table-button mx-1' onClick={setModal} style={{ borderRadius: "10px" }}>Change Password</button>
+                                        )}
+                                    </div>
                                 </>
                             ) : (
                                 <p>No user found</p>
                             )}
-                            <div className='d-flex'>
-                                <button className='btn table-button mx-1' onClick={setEditModal} style={{ borderRadius: "10px" }}>Edit</button>
-                                <button className='btn table-button mx-1' onClick={setModal} style={{ borderRadius: "10px" }}>Change Password</button>
-                            </div>
+
                         </div>
                         <div className="row mt-3 text-dark profile-course">
                             <h5 className='mb-2 mt-2'>Enrolled Courses</h5>

@@ -517,21 +517,28 @@ exports.studentEnrollment = async (req, res) => {
 }
 
 exports.studentGetAssignments = async (req, res) => {
-    const studentId = req.params.id
-    console.log("student id from get assignments:", studentId)
+    const studentId = req.params.id;
+    const { page = 1, limit = 6 } = req.query
+
     try {
         const student = await User.findById(studentId).populate('enrolledCourses');
 
         if (!student) {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Student not found' });
         }
+
         const courseIds = student.enrolledCourses.map(course => course._id);
+
+        const totalAssignments = await Assignment.countDocuments({ course: { $in: courseIds } });
+
         const assignments = await Assignment.find({ course: { $in: courseIds } })
             .populate({
                 path: "course",
                 select: "title"
             })
-            .select("title dueDate description course submissions");
+            .select("title dueDate description course submissions")
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit))
 
         const assignmentWithCourse = assignments.map(assignment => ({
             _id: assignment._id,
@@ -540,14 +547,21 @@ exports.studentGetAssignments = async (req, res) => {
             description: assignment.description,
             course: assignment.course ? assignment.course.title : "unknown assignment",
             submissions: assignment.submissions
-        }))
-        console.log("assignments for student:", assignments);
-        res.status(HttpStatus.OK).json({ message: "fetched the assignments", assignments: assignmentWithCourse });
+        }));
+
+        res.status(HttpStatus.OK).json({
+            message: "Fetched the assignments",
+            assignments: assignmentWithCourse,
+            totalAssignments,
+            totalPages: Math.ceil(totalAssignments / limit),
+            currentPage: parseInt(page),
+        });
     } catch (error) {
         console.error("Error fetching assignments:", error.message);
         res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
     }
-}
+};
+
 
 exports.studentsubmitAssignment = async (req, res) => {
     const assignmentId = req.params.id

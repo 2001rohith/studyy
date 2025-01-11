@@ -1,166 +1,255 @@
-// import { useState } from 'react';
-// import TeacherSidebar2 from '../components/TeacherSidebar2';
-// import { useLocation,useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import StudentSidebar from '../components/StudentSidebar';
+import { useApiClient } from "../../utils/apiClient";
+import { useUser } from "../../UserContext";
+import debounce from 'lodash/debounce';
 
-// const TeacherAddQuiz = () => {
-//     const location = useLocation();
-//     const navigate = useNavigate();
-//     const cId = location.state?.courseId;
-//     const [courseId, setCourseId] = useState(cId);
-//     const [quizTitle, setQuizTitle] = useState('');
-//     const [questions, setQuestions] = useState([{ question: '', option1: '', option2: '', answer: '' }]);
-//     const [message, setMessage] = useState('Fill Fields!');
+function StudentAllCourses() {
+  const apiClient = useApiClient();
+  const navigate = useNavigate();
+  const { user } = useUser();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [modulesFilter, setModulesFilter] = useState("");
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCourses, setTotalCourses] = useState(0);
+  const itemsPerPage = 4;
 
-//     const handleQuizTitleChange = (e) => setQuizTitle(e.target.value);
+  // Debounced search function
+  const debouncedSearch = debounce((searchTerm) => {
+    setSearch(searchTerm);
+    setCurrentPage(1);
+  }, 500);
 
-//     const handleQuestionChange = (index, field, value) => {
-//         const updatedQuestions = [...questions];
-//         updatedQuestions[index][field] = value;
-//         setQuestions(updatedQuestions);
-//     };
+  useEffect(() => {
+    fetchCourses();
+  }, [currentPage, search, modulesFilter]);
 
-//     const handleAddQuestion = () => {
-//         setQuestions([...questions, { question: '', option1: '', option2: '', answer: '' }]);
-//     };
-  
-//     const handleRemoveQuestion = (index) => {
-//         const updatedQuestions = questions.filter((_, i) => i !== index);
-//         setQuestions(updatedQuestions);
-//     };
+  const fetchCourses = async () => {
+    try {
+      if (!user?.id) {
+        setError('User information not found');
+        navigate("/", { replace: true });
+        return;
+      }
 
-//     const handleSubmit = async (e) => {
-//         e.preventDefault();
+      setLoading(true);
+      const queryParams = new URLSearchParams({
+        page: currentPage,
+        limit: itemsPerPage,
+        search: search,
+        modulesFilter: modulesFilter
+      });
+
+      const response = await apiClient.get(
+        `/course/home-get-courses/${user.id}?${queryParams}`
+      );
+
+      if (response.status === 200) {
+        const { courses, totalPages, totalCourses } = response.data;
+        setCourses(courses || []);
+        setTotalPages(totalPages);
+        setTotalCourses(totalCourses);
+      }
+    } catch (error) {
+      console.error("Error in fetching courses:", error);
+      setError(error.response?.data?.message || 'Failed to fetch courses');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearchChange = (e) => {
+    debouncedSearch(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearch('');
+    setCurrentPage(1);
+  };
+
+  const handleModulesFilter = (value) => {
+    setModulesFilter(value);
+    setCurrentPage(1);
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="pagination-controls text-center mt-3">
+        <button 
+          className="btn btn-outline-primary mx-1"
+          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </button>
         
-//         const trimmedTitle = quizTitle.trim();
-//         if (!trimmedTitle) {
-//             setMessage("Please provide a valid quiz title.");
-//             return;
-//         }
+        {[...Array(totalPages).keys()].map((num) => {
+          const pageNum = num + 1;
+          // Show first page, last page, current page, and pages around current page
+          if (
+            pageNum === 1 ||
+            pageNum === totalPages ||
+            (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+          ) {
+            return (
+              <button
+                key={pageNum}
+                className={`btn ${currentPage === pageNum ? 'btn-primary' : 'btn-outline-primary'} mx-1`}
+                onClick={() => setCurrentPage(pageNum)}
+              >
+                {pageNum}
+              </button>
+            );
+          } else if (
+            pageNum === currentPage - 2 ||
+            pageNum === currentPage + 2
+          ) {
+            return <span key={pageNum} className="mx-1">...</span>;
+          }
+          return null;
+        })}
+        
+        <button 
+          className="btn btn-outline-primary mx-1"
+          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </button>
+      </div>
+    );
+  };
 
-//         const quizData = { title: trimmedTitle, courseId, questions };
+  if (loading && !courses.length) {
+    return (
+      <div className="spinner-border text-primary spinner2" role="status">
+        <span className="visually-hidden">Loading...</span>
+      </div>
+    );
+  }
 
-//         try {
-//             const response = await fetch("http://localhost:8000/course/add-quiz", {
-//                 method: 'POST',
-//                 headers: {
-//                     'Content-Type': 'application/json',
-//                     'Authorization': `Bearer ${localStorage.getItem('token')}`
-//                 },
-//                 body: JSON.stringify(quizData)
-//             });
+  return (
+    <div className="row">
+      <div className="col text-light side-bar">
+        <StudentSidebar />
+      </div>
+      <div className="col text-dark">
+        <div className="row headers">
+          <h4>Courses</h4>
+        </div>
+        <div className="row table-content">
+          <div className="search-bar ms-1 border-bottom pb-3">
+            <input
+              type="text"
+              placeholder="Search course..."
+              defaultValue={search}
+              onChange={handleSearchChange}
+              className="form-control d-inline-block w-auto"
+            />
+            <button
+              className="btn search-bar-button ms-2"
+              onClick={clearSearch}
+              disabled={!search}
+            >
+              Clear
+            </button>
+            <div className="dropdown ms-2 d-inline-block">
+              <button
+                className="btn filter-button dropdown-toggle"
+                type="button"
+                id="dropdownMenuButton"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                {modulesFilter || "Modules"}
+              </button>
+              <ul className="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                <li>
+                  <button className="dropdown-item" onClick={() => handleModulesFilter('')}>
+                    Default
+                  </button>
+                </li>
+                <li>
+                  <button className="dropdown-item" onClick={() => handleModulesFilter('Less')}>
+                    1-2 Modules
+                  </button>
+                </li>
+                <li>
+                  <button className="dropdown-item" onClick={() => handleModulesFilter('Medium')}>
+                    3-4 Modules
+                  </button>
+                </li>
+                <li>
+                  <button className="dropdown-item" onClick={() => handleModulesFilter('More')}>
+                    4+ Modules
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
 
-//             const data = await response.json();
-//             if (response.ok) {
-//                 setMessage(data.message);
-//             } else {
-//                 setMessage(data.message || "Error occurred while creating the quiz.");
-//             }
-//         } catch (error) {
-//             console.error('Error creating quiz:', error);
-//             setMessage("Server error. Please try again.");
-//         }
-//     };
+          {error && (
+            <div className="alert alert-danger mt-3" role="alert">
+              {error}
+            </div>
+          )}
 
-//     const goback = async () => {
-//         navigate("/teacher-view-quizzes", { state: { id: courseId } });
-//     };
+          <div className="row mt-3 text-dark">
+            <h5 className="mb-3">Our courses! ({totalCourses} total)</h5>
+            <div className="scroll-container">
+              {loading ? (
+                <div className="text-center">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              ) : courses.length === 0 ? (
+                <div className="alert alert-info" role="alert">
+                  No courses match your search criteria.
+                </div>
+              ) : (
+                <div className="row row-cols-1 row-cols-md-2 g-4">
+                  {courses.map((course) => (
+                    <div className="col" key={course._id}>
+                      <div className="card course-card h-100">
+                        <img
+                          src="/course-card1.jpg"
+                          className="card-img-top"
+                          alt="Course thumbnail"
+                          style={{ height: '200px', objectFit: 'cover', borderRadius: "15px" }}
+                        />
+                        <div className="card-body d-flex flex-column">
+                          <h5 className="card-title">{course.title}</h5>
+                          <p className="card-text flex-grow-1">{course.description}</p>
+                          <div className="text-center mt-auto">
+                            <button
+                              className="btn button"
+                              onClick={() => navigate("/student-check-course", { state: { courseId: course._id } })}
+                            >
+                              More
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {renderPagination()}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-    
-    
-
-
-//     return (
-//         <>
-//             <div className="row">
-//                 <div className="col-md-3 text-light side-bar">
-//                     <TeacherSidebar2 />
-//                 </div>
-//                 <div className="col text-light ms-2">
-//                     <div className="row mb-4 headers">
-//                         <h4>Quizzes</h4>
-//                     </div>
-
-//                     <div className="row add-course-forms">
-//                         <div className="col-md-6 text-dark first-form">
-//                             <h5 className="mb-5">Create a Assignment</h5>
-//                             {message && <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-//                                 <div class="modal-dialog">
-//                                     <div class="modal-content">
-//                                         <div class="modal-header">
-//                                             <h5 class="modal-title" id="exampleModalLabel">Alert!</h5>
-//                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-//                                         </div>
-//                                         <div class="modal-body">
-//                                             {message}
-//                                         </div>
-//                                         <div class="modal-footer">
-//                                             <button type="button" onClick={goback} class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-//                                         </div>
-//                                     </div>
-//                                 </div>
-//                             </div>}
-//                             <form onSubmit={handleSubmit}>
-//                                 <input
-//                                     className="form-control mb-3"
-//                                     type="text"
-//                                     placeholder="Quiz Title"
-//                                     value={quizTitle}
-//                                     onChange={handleQuizTitleChange}
-//                                     required
-//                                 />
-//                                 {questions.map((q, index) => (
-//                                     <div key={index} className="question-section mb-4">
-//                                         <h6>Question {index + 1}</h6>
-//                                         <input
-//                                             className="form-control mb-2"
-//                                             type="text"
-//                                             placeholder="Question"
-//                                             value={q.question}
-//                                             onChange={(e) => handleQuestionChange(index, 'question', e.target.value)}
-//                                             required
-//                                         />
-//                                         <input
-//                                             className="form-control mb-2"
-//                                             type="text"
-//                                             placeholder="Option 1"
-//                                             value={q.option1}
-//                                             onChange={(e) => handleQuestionChange(index, 'option1', e.target.value)}
-//                                             required
-//                                         />
-//                                         <input
-//                                             className="form-control mb-2"
-//                                             type="text"
-//                                             placeholder="Option 2"
-//                                             value={q.option2}
-//                                             onChange={(e) => handleQuestionChange(index, 'option2', e.target.value)}
-//                                             required
-//                                         />
-//                                         <input
-//                                             className="form-control mb-2"
-//                                             type="text"
-//                                             placeholder="Answer"
-//                                             value={q.answer}
-//                                             onChange={(e) => handleQuestionChange(index, 'answer', e.target.value)}
-//                                             required
-//                                         />
-//                                         <button type="button" className="btn btn-danger" onClick={() => handleRemoveQuestion(index)}>
-//                                             Remove Question
-//                                         </button>
-//                                     </div>
-//                                 ))}
-//                                 <button type="button" className="btn btn-primary" onClick={handleAddQuestion}>
-//                                     Add Another Question
-//                                 </button>
-//                                 <button className="btn btn-secondary mt-3" type="submit" data-bs-toggle="modal" data-bs-target="#exampleModal">
-//                                     Create Quiz
-//                                 </button>
-//                             </form>
-//                         </div>
-//                     </div>
-//                 </div>
-//             </div>
-//         </>
-//     );
-// };
-
-// export default TeacherAddQuiz;
+export default StudentAllCourses;

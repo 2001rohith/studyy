@@ -3,11 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import StudentSidebar from '../components/StudentSidebar'
 import Footer from "../components/Footer"
 import { useApiClient } from "../../utils/apiClient"
-
 import { useUser } from "../../UserContext"
-
-
-
 
 function StudentHome() {
   const apiClient = useApiClient()

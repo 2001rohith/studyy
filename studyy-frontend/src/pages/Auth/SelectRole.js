@@ -14,7 +14,18 @@ const SelectRole = () => {
   const [token, setToken] = useState(location.state?.token || '');
   const [certificate, setCertificate] = useState(null);
   const [message, setMessage] = useState('');
-  
+  const [tokenFromUrl, setTokenFromUrl] = useState('');
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const tokenInUrl = queryParams.get('token');
+    if (tokenInUrl) {
+      setTokenFromUrl(tokenInUrl);
+      setToken(tokenInUrl); 
+    }
+  }, [location.search]);
+
+  // console.log("token from url:", tokenFromUrl)
 
   const handleRoleSelection = async () => {
     try {
@@ -27,6 +38,11 @@ const SelectRole = () => {
         const formData = new FormData();
         formData.append('role', selectedRole);
         if (certificate) formData.append('certificate', certificate);
+
+        console.log('Selected Role:', selectedRole);
+        console.log('Token:', token);
+        // console.log('Token from URL:', tokenFromUrl);
+
 
         const response = await apiClient.post(`/user/select-role/${token}`, formData)
 

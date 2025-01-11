@@ -785,6 +785,11 @@ input:is(:focus,:valid)~label{
   margin-top: 300px;
 }
 
+.spinner3 {
+  margin-left: 580px;
+  margin-top: 100px;
+}
+
 .pagination {
   margin-left: 520px;
   margin-top: 80px;
@@ -982,3 +987,7 @@ input:is(:focus,:valid)~label{
   background-color: #112A46;
   color: white;
 }
+
+/* .pagination-controls{
+  margin-top: 40px;
+} */
