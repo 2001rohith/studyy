@@ -215,7 +215,7 @@ function StudentAllCourses() {
                 </div>
               )}
             </div>
-          </div>;
+          </div>
         </div>
       </div>
       {renderPagination()}
