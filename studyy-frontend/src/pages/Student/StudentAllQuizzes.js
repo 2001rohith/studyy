@@ -11,7 +11,7 @@ function StudentAllQuizzes() {
     const [loading, setLoading] = useState(true);
     const [quizzes, setQuizzes] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 6; // Number of quizzes per page
+    const itemsPerPage = 4; // Number of quizzes per page
 
     // Calculate pagination details
     const totalPages = Math.max(1, Math.ceil(quizzes.length / itemsPerPage)); // Always show at least one page
