@@ -157,6 +157,30 @@ exports.getUsers = async (req, res) => {
     }
 }
 
+// exports.getUsers = async (req, res) => {
+//     try {
+//         const { page = 1, limit = 6 } = req.query; 
+//         const skip = (page - 1) * limit;
+
+//         const users = await User.find({ role: { $ne: 'admin' } })
+//             .skip(skip)
+//             .limit(parseInt(limit))
+
+//         const totalUsers = await User.countDocuments({ role: { $ne: 'admin' } })
+//         const totalPages = Math.ceil(totalUsers / limit);
+
+//         res.status(HttpStatus.OK).json({
+//             users,
+//             totalPages,
+//             message: "User list for admin"
+//         });
+//     } catch (error) {
+//         console.error("Get users error:", error.message);
+//         res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Server error" });
+//     }
+// };
+
+
 exports.UpdateUser = async (req, res) => {
     const userId = req.params.id
     const { name, email, role } = req.body
