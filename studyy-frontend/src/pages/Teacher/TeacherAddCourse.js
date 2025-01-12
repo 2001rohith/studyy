@@ -4,31 +4,50 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useApiClient } from "../../utils/apiClient"
 import API_URL from '../../axiourl';
 import { useUser } from "../../UserContext"
-
-
+import { Upload } from 'lucide-react';
 
 const TeacherAddCourse = () => {
     const apiClient = useApiClient()
     const location = useLocation();
     const navigate = useNavigate();
     const { user, token } = useUser();
-
     const userId = user.id;
 
     // Course-related states
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [message, setMessage] = useState('Fill Fields!');
+    const [message, setMessage] = useState('');
     const [courseId, setCourseId] = useState(null);
+    const [courseLoading, setCourseLoading] = useState(false);
 
     // Module-related states
     const [moduleTitle, setModuleTitle] = useState('');
     const [moduleDescription, setModuleDescription] = useState('');
     const [moduleFile, setModuleFile] = useState(null);
-    const [moduleVideoFile, setModuleVideoFile] = useState(null)
+    const [moduleVideoFile, setModuleVideoFile] = useState(null);
+    const [moduleLoading, setModuleLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState({
+        pdf: 0,
+        video: 0
+    });
+    const [fileNames, setFileNames] = useState({
+        pdf: '',
+        video: ''
+    });
 
+    // Handle file changes
+    const handleFileChange = (e, type) => {
+        const file = e.target.files[0];
+        if (type === 'pdf') {
+            setModuleFile(file);
+            setFileNames(prev => ({ ...prev, pdf: file.name }));
+        } else {
+            setModuleVideoFile(file);
+            setFileNames(prev => ({ ...prev, video: file.name }));
+        }
+        setUploadProgress(prev => ({ ...prev, [type]: 0 }));
+    };
 
-    
     // Handle course creation
     const handleCourseSubmit = async (e) => {
         e.preventDefault();
@@ -41,8 +60,12 @@ const TeacherAddCourse = () => {
         }
 
         try {
-
-            const response = await apiClient.post(`/course/create`, { title: trimmedTitle, description: trimmedDescription, userId });
+            setCourseLoading(true);
+            const response = await apiClient.post(`/course/create`, { 
+                title: trimmedTitle, 
+                description: trimmedDescription, 
+                userId 
+            });
 
             const data = response.data;
             if (response.status === 200) {
@@ -54,6 +77,8 @@ const TeacherAddCourse = () => {
                 setMessage(error.response.data.message || "An error occurred");
             }
             console.error('Error creating course:', error);
+        } finally {
+            setCourseLoading(false);
         }
     };
 
@@ -70,16 +95,26 @@ const TeacherAddCourse = () => {
         formData.append('description', moduleDescription);
         formData.append('courseId', courseId);
         formData.append('pdf', moduleFile);
-        formData.append("video", moduleVideoFile)
-
+        formData.append("video", moduleVideoFile);
 
         try {
-
-            const response = await apiClient.post(`/course/teacher-add-module`, formData);
+            setModuleLoading(true);
+            const response = await apiClient.post(
+                `/course/teacher-add-module`, 
+                formData,
+                {
+                    onUploadProgress: (progressEvent) => {
+                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        setUploadProgress(prev => ({
+                            pdf: moduleFile ? percentCompleted : 0,
+                            video: moduleVideoFile ? percentCompleted : 0
+                        }));
+                    }
+                }
+            );
 
             const data = response.data;
             if (response.status === 200) {
-                // alert("Module created!")
                 setMessage("Module added successfully.");
             } else {
                 setMessage(data.message);
@@ -87,6 +122,8 @@ const TeacherAddCourse = () => {
         } catch (error) {
             console.error('Error adding module:', error);
             setMessage("Error occurred while adding the module.");
+        } finally {
+            setModuleLoading(false);
         }
     };
 
@@ -104,22 +141,6 @@ const TeacherAddCourse = () => {
                     <div className="row add-course-forms">
                         <div className="col-md-6 text-dark first-form">
                             <h5 className="mb-5">Create a New Course</h5>
-                            {message && <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="exampleModalLabel">Alert!</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            {message}
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>}
                             <form onSubmit={handleCourseSubmit}>
                                 <input
                                     className="form-control mb-3"
@@ -128,6 +149,7 @@ const TeacherAddCourse = () => {
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
                                     required
+                                    disabled={courseLoading}
                                 />
                                 <textarea
                                     className="form-control mb-3"
@@ -135,33 +157,26 @@ const TeacherAddCourse = () => {
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     required
+                                    disabled={courseLoading}
                                 />
-                                <button className="btn btn-secondary" type="submit" data-bs-toggle="modal" data-bs-target="#exampleModal">
-                                    Create Course
+                                <button 
+                                    className="btn btn-secondary" 
+                                    type="submit" 
+                                    disabled={courseLoading}
+                                >
+                                    {courseLoading ? (
+                                        <>
+                                            <Upload className="inline-block mr-2" size={16} />
+                                            Creating...
+                                        </>
+                                    ) : 'Create Course'}
                                 </button>
                             </form>
                         </div>
 
                         <div className="col-md-6 text-dark">
                             <h5 className="mb-5">Add Module</h5>
-                            {message && <div className="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                <div className="modal-dialog">
-                                    <div className="modal-content">
-                                        <div className="modal-header">
-                                            <h5 className="modal-title" id="exampleModalLabel">Alert!</h5>
-                                            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            {message}
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>}
                             {courseId ? (
-
                                 <p>Adding module to course {title}</p>
                             ) : (
                                 <p>Please create a course first to add modules.</p>
@@ -170,49 +185,113 @@ const TeacherAddCourse = () => {
                                 <input
                                     className="form-control mb-3"
                                     type="text"
+                                    placeholder="Module Title"
                                     value={moduleTitle}
                                     onChange={(e) => setModuleTitle(e.target.value)}
                                     required
-                                    disabled={!courseId}
+                                    disabled={!courseId || moduleLoading}
                                 />
                                 <textarea
                                     className="form-control mb-3"
+                                    placeholder="Module Description"
                                     value={moduleDescription}
                                     onChange={(e) => setModuleDescription(e.target.value)}
                                     required
-                                    disabled={!courseId}
+                                    disabled={!courseId || moduleLoading}
                                 />
-                                <label>Upload PDF:</label>
-                                <input
-                                    className="form-control mb-3"
-                                    type="file"
-                                    accept="application/pdf"
-                                    onChange={(e) => setModuleFile(e.target.files[0])}
-                                    required
-                                    disabled={!courseId}
-                                />
-                                <label>Upload Video:</label>
-                                <input
-                                    className="form-control mb-3"
-                                    type="file"
-                                    accept="video/mp4"
-                                    onChange={(e) => setModuleVideoFile(e.target.files[0])}
-                                    required
-                                    disabled={!courseId}
-                                />
+                                
+                                {/* PDF Upload Section */}
+                                <div className="mb-3">
+                                    <label>Upload PDF:</label>
+                                    <div className="position-relative">
+                                        <input
+                                            className="form-control"
+                                            type="file"
+                                            accept="application/pdf"
+                                            onChange={(e) => handleFileChange(e, 'pdf')}
+                                            required
+                                            disabled={!courseId || moduleLoading}
+                                        />
+                                        {moduleLoading && fileNames.pdf && (
+                                            <div className="progress mt-2">
+                                                <div 
+                                                    className="progress-bar progress-bar-striped progress-bar-animated" 
+                                                    role="progressbar" 
+                                                    style={{ width: `${uploadProgress.pdf}%` }}
+                                                    aria-valuenow={uploadProgress.pdf} 
+                                                    aria-valuemin="0" 
+                                                    aria-valuemax="100"
+                                                >
+                                                    {uploadProgress.pdf}%
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Video Upload Section */}
+                                <div className="mb-3">
+                                    <label>Upload Video:</label>
+                                    <div className="position-relative">
+                                        <input
+                                            className="form-control"
+                                            type="file"
+                                            accept="video/mp4"
+                                            onChange={(e) => handleFileChange(e, 'video')}
+                                            required
+                                            disabled={!courseId || moduleLoading}
+                                        />
+                                        {moduleLoading && fileNames.video && (
+                                            <div className="progress mt-2">
+                                                <div 
+                                                    className="progress-bar progress-bar-striped progress-bar-animated" 
+                                                    role="progressbar" 
+                                                    style={{ width: `${uploadProgress.video}%` }}
+                                                    aria-valuenow={uploadProgress.video} 
+                                                    aria-valuemin="0" 
+                                                    aria-valuemax="100"
+                                                >
+                                                    {uploadProgress.video}%
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
                                 <button
                                     className="btn btn-secondary"
                                     type="submit"
-                                    disabled={!courseId}
-                                    data-bs-toggle="modal" data-bs-target="#exampleModal"
+                                    disabled={!courseId || moduleLoading}
                                 >
-                                    Add Module
+                                    {moduleLoading ? (
+                                        <>
+                                            <Upload className="inline-block mr-2" size={16} />
+                                            Uploading...
+                                        </>
+                                    ) : 'Add Module'}
                                 </button>
                             </form>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Toast Message */}
+            {message && (
+                <div 
+                    className="toast show position-fixed bottom-0 end-0 m-3" 
+                    style={{ borderRadius: "15px", backgroundColor: "#0056b3", color: "white" }}
+                >
+                    <div className="toast-body">
+                        {message}
+                        <button 
+                            type="button" 
+                            className="btn-close ms-2 mb-1" 
+                            onClick={() => setMessage("")}
+                        />
+                    </div>
+                </div>
+            )}
         </>
     );
 };
